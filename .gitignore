@@ -1,0 +1,44 @@
+# Django SQLite veritabanı dosyası
+db.sqlite3
+db.zip
+gnc.zip
+
+# Medya yüklemeleri (kullanıcıdan gelen dosyalar)
+media/
+logs/
+
+# Django static toplama klasörü
+staticfiles_collected/
+
+# Yedek klasörü
+yedek/
+
+# NSSM dosyası (servisle ilgili olabilir)
+nssm-2.24/
+
+# Ortam değişkenleri (varsa)
+.env
+
+# pycache ve derlenmiş dosyalar
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# VSCode ayarları (opsiyonel)
+.vscode/
+
+# Node.js dosyaları
+node_modules/
+package-lock.json
+
+# Local runtime dosyaları
+*.log
+*.bak
+*.tmp
+
+# IDE dosyaları
+*.idea/
+*.swp
+.DS_Store
+Thumbs.db
