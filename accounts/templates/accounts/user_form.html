@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow max-w-2xl mx-auto">
+    <h1 class="text-xl font-semibold text-gray-900 mb-6">{{ page_title }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="space-y-4">
+            {{ form.as_p }}
+        </div>
+        <div class="mt-8 flex justify-end gap-2">
+            <a href="{% url 'accounts:user_list' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">İptal</a>
+            <button type="submit" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg">Kaydet</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Raporlar</h1>
+        <p class="text-sm text-gray-500 mt-1">İşletmenizin envanter durumuna genel bir bakış.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-5 rounded-xl shadow">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-dollar-sign text-blue-500 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Toplam Envanter Değeri</p>
+                    <h3 class="text-2xl font-bold mt-1">₺{{ total_inventory_value|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow"><p class="text-gray-400">Yakında: Aylık Satış Hacmi</p></div>
+        <div class="bg-white p-5 rounded-xl shadow"><p class="text-gray-400">Yakında: Potansiyel Kar</p></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow">
+            <div class="p-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">En Çok Stoğa Sahip Ürünler</h3>
+            </div>
+            <ul class="divide-y divide-gray-200">
+                {% for product in most_stocked_products %}
+                <li class="p-4 flex justify-between items-center">
+                    <a href="{{ product.get_absolute_url }}" class="text-primary hover:underline">{{ product.name }}</a>
+                    <span class="font-bold text-gray-800">{{ product.stock }} Adet</span>
+                </li>
+                {% empty %}
+                <li class="p-4 text-gray-500">Gösterilecek ürün yok.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="bg-white rounded-xl shadow">
+            <div class="p-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Son Hareketler</h3>
+            </div>
+            <ul class="divide-y divide-gray-200">
+                {% for movement in latest_movements %}
+                <li class="p-4">
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm font-medium text-gray-800">{{ movement.product.name }}</p>
+                        <p class="text-sm font-bold {% if 'Alım' in movement.get_movement_type_display or 'Fazlası' in movement.get_movement_type_display %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ movement.get_movement_type_display }} ({{ movement.quantity }})
+                        </p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ movement.timestamp|date:"d M Y, H:i" }} - {{ movement.user.username|default:'Sistem' }}
+                    </p>
+                </li>
+                {% empty %}
+                <li class="p-4 text-gray-500">Gösterilecek hareket yok.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock content %}

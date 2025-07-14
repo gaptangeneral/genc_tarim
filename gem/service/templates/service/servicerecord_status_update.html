@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow max-w-lg mx-auto">
+    <h1 class="text-xl font-semibold text-gray-900 mb-2">{{ page_title }}</h1>
+    <p class="text-sm text-gray-600 mb-6">
+        Müşteri: <strong class="font-medium">{{ object.customer }}</strong> <br>
+        Makine: <strong class="font-medium">{{ object.machine_brand }} {{ object.machine_model }}</strong>
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div>
+            <label for="{{ form.status.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.status.label }}</label>
+            {{ form.status }}
+        </div>
+        <div class="mt-8 flex justify-end gap-2">
+            <a href="{% url 'service:servicerecord_detail' pk=object.pk %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition-all">İptal</a>
+            <button type="submit" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-all">Durumu Güncelle</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}Stok Yönetimi{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Üstteki istatistik kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Toplam Ürün -->
+        <div class="bg-white p-5 rounded-xl shadow transition hover:shadow-lg">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-gray-500 text-sm">Toplam Ürün Çeşidi</p>
+                    <h3 class="text-2xl font-bold mt-1">{{ stats.total_products }}</h3>
+                </div>
+                <div class="bg-light p-3 rounded-full"><i class="fas fa-box text-primary text-xl"></i></div>
+            </div>
+        </div>
+        <!-- Stokta Mevcut -->
+        <div class="bg-white p-5 rounded-xl shadow transition hover:shadow-lg">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-gray-500 text-sm">Stokta Mevcut</p>
+                    <h3 class="text-2xl font-bold mt-1">{{ stats.in_stock }}</h3>
+                </div>
+                <div class="bg-green-100 p-3 rounded-full"><i class="fas fa-check-circle text-green-600 text-xl"></i></div>
+            </div>
+        </div>
+        <!-- Düşük Stok -->
+        <div class="relative group bg-white p-5 rounded-xl shadow transition hover:shadow-lg cursor-pointer">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-gray-500 text-sm">Düşük Stok</p>
+                    <h3 class="text-2xl font-bold mt-1">{{ stats.low_stock }}</h3>
+                </div>
+                <div class="bg-orange-100 p-3 rounded-full"><i class="fas fa-exclamation-triangle text-orange-500 text-xl"></i></div>
+            </div>
+            <div class="absolute top-full left-0 z-20 w-72 p-4 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                <h4 class="text-md font-bold text-gray-800 mb-3 border-b pb-2">Düşük Stoktaki Ürünler</h4>
+                {% if stats.low_stock_products %}
+                    <ul class="space-y-2 max-h-60 overflow-y-auto">
+                        {% for product in stats.low_stock_products|slice:":15" %}
+                        <li class="text-sm">
+                            <a href="{% url 'inventory:product_detail' slug=product.slug %}" class="text-gray-700 hover:text-primary-600 hover:underline">
+                                {{ product.name }} <span class="text-gray-500">({{ product.stock }} adet)</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% if stats.low_stock > 15 %}
+                        <p class="text-xs text-gray-500 mt-3 border-t pt-2">... ve {{ stats.low_stock|add:"-15" }} ürün daha.</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-sm text-gray-500">Düşük stoklu ürün bulunmuyor.</p>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Tükenen Ürünler -->
+        <div class="relative group bg-white p-5 rounded-xl shadow transition hover:shadow-lg cursor-pointer">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-gray-500 text-sm">Tükenen Ürünler</p>
+                    <h3 class="text-2xl font-bold mt-1">{{ stats.out_of_stock }}</h3>
+                </div>
+                <div class="bg-red-100 p-3 rounded-full"><i class="fas fa-times-circle text-red-500 text-xl"></i></div>
+            </div>
+            <div class="absolute top-full right-0 z-20 w-72 p-4 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                <h4 class="text-md font-bold text-gray-800 mb-3 border-b pb-2">Tükenen Ürünler Listesi</h4>
+                {% if stats.out_of_stock_products %}
+                    <ul class="space-y-2 max-h-60 overflow-y-auto">
+                        {% for product in stats.out_of_stock_products|slice:":15" %}
+                        <li class="text-sm">
+                            <a href="{% url 'inventory:product_detail' slug=product.slug %}" class="text-gray-700 hover:text-primary-600 hover:underline">
+                                {{ product.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% if stats.out_of_stock > 15 %}
+                        <p class="text-xs text-gray-500 mt-3 border-t pt-2">... ve {{ stats.out_of_stock|add:"-15" }} ürün daha.</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-sm text-gray-500">Tükenen ürün bulunmuyor.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtre Formu -->
+    <form method="get" class="bg-white rounded-xl shadow p-4">
+        <div class="flex flex-col md:flex-row md:items-end space-y-4 md:space-y-0 md:space-x-4">
+            <!-- Arama Kutusu -->
+            <div class="w-full md:w-1/2 relative">
+                <label for="searchInput" class="block text-gray-700 text-sm font-medium mb-1">Ara</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" name="query" id="searchInput" placeholder="Ürün adı, barkod, SKU..." class="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow duration-200" value="{{ request.GET.query }}">
+                </div>
+            </div>
+            <!-- Kategori -->
+            <div class="flex-1">
+                <label for="{{ form.category.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Kategori</label>
+                {{ form.category }}
+            </div>
+            <!-- Marka -->
+            <div class="flex-1">
+                <label for="{{ form.brand.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Marka</label>
+                {{ form.brand }}
+            </div>
+            <!-- Butonlar -->
+            <div class="flex items-end space-x-2">
+                <button type="submit" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-all flex items-center">
+                    <i class="fas fa-filter mr-2"></i> Filtrele
+                </button>
+                <a href="{% url 'inventory:product_list' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition-all">
+                    Sıfırla
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Ürün Tablosu -->
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Ürün Listesi</h3>
+            <a href="{% url 'inventory:product_add' %}" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg flex items-center transition-all text-sm">
+                <i class="fas fa-plus mr-2"></i>Yeni Ürün Ekle
+            </a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200" id="productTable">
+                {% include "inventory/partials/product_table_rows.html" %}
+            </table>
+        </div>
+        <!-- Sayfalama -->
+        {% if is_paginated %}
+            {% include "inventory/partials/pagination.html" %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("searchInput");
+    const table = document.getElementById("productTable");
+
+    let timer;
+
+    searchInput.addEventListener("input", function () {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            const query = searchInput.value;
+            fetch(`/inventory/ajax/product-search/?query=${encodeURIComponent(query)}`)
+                .then(response => response.text())
+                .then(html => {
+                    table.innerHTML = html;
+                });
+        }, 300); // debounce süresi
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="bg-white p-6 rounded-xl shadow">
+        <h2 class="text-xl font-semibold text-gray-800">Manuel Yedekleme</h2>
+        <p class="text-sm text-gray-600 mt-2">
+            Mevcut veritabanının ve yüklenmiş medya dosyalarının tamamının bir yedeğini oluşturmak için aşağıdaki butona tıklayın.
+            İşlem tamamlandığında, `backup_tarih.zip` adında bir dosya bilgisayarınıza indirilecektir.
+        </p>
+        <div class="mt-4">
+            <a href="{% url 'backups:create_backup' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all">
+                <i class="fas fa-download mr-2"></i> Yedek Oluştur ve İndir
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-red-500">
+        <h2 class="text-xl font-semibold text-red-700">Yedekten Geri Yükle</h2>
+        <p class="text-sm text-gray-600 mt-2">
+            <strong>DİKKAT:</strong> Bu işlem son derece risklidir ve geri alınamaz. Bir yedek dosyasını geri yüklediğinizde,
+            mevcut veritabanınız ve medya dosyalarınızın **TÜMÜ SİLİNİR** ve yedek dosyasının içindekilerle değiştirilir.
+            Bu işlemden önce mutlaka mevcut sistemin bir yedeğini aldığınızdan emin olun.
+        </p>
+        <form action="{% url 'backups:restore_backup' %}" method="post" enctype="multipart/form-data" class="mt-4 flex items-end gap-4">
+            {% csrf_token %}
+            <div>
+                <label for="{{ form.backup_file.id_for_label }}" class="block text-sm font-medium text-gray-700">Yüklenecek .zip Dosyasını Seçin</label>
+                {{ form.backup_file }}
+            </div>
+            <button type="submit" onclick="return confirm('UYARI! Mevcut tüm veriler silinecek ve bu yedekle değiştirilecek. Bu işlemi yapmak istediğinizden kesinlikle emin misiniz?');" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-all">
+                <i class="fas fa-upload mr-2"></i> Geri Yükle
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

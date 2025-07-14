@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Etiket Yazdır: {{ product.name }}</title>
+    <style>
+        /* === YAZDIRMA AYARLARI === */
+        @page {
+            size: 57mm 39mm; /* Genişlik x Yükseklik */
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* === YENİ ETİKET ANA YAPISI === */
+        .label {
+            width: 57mm; 
+            height: 39mm;
+            display: flex;
+            flex-direction: column; /* İçerikleri dikeyde sırala */
+            align-items: center;    /* Yatayda ortala */
+            justify-content: space-between; /* Üst ve Alt arasına boşluk bırak */
+            box-sizing: border-box;
+            padding: 3mm; /* Kenar boşlukları */
+            text-align: center;
+        }
+
+        /* === BARKOD === */
+        .barcode-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .barcode-container img {
+            max-width: 100%;
+            width: 50mm; 
+            /* Barkod yüksekliğini artırdık */
+            max-height: 22mm; 
+            object-fit: contain;
+            display: block;
+        }
+        
+        /* === ALT BİLGİ KUTUSU === */
+        .footer-content {
+            /* Bu kutu model no ve firma adını gruplar */
+        }
+
+        /* === MODEL NUMARASI === */
+        .model-no {
+            font-size: 11pt; /* Biraz büyüttük */
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* === FİRMA İSMİ === */
+        .company-name {
+            font-size: 8pt;
+            font-weight: normal;
+            margin-top: 1mm; /* Model no ile arasına boşluk */
+            color: #333;
+        }
+    </style>
+</head>
+<body onload="window.print(); setTimeout(function () { window.close(); }, 500);">
+
+    <div class="label">
+        
+        <div class="barcode-container">
+            {% if product.barcode_image %}
+                <img src="{{ product.barcode_image.url }}" alt="Barkod">
+            {% else %}
+                <span style="font-size: 9pt; font-weight: bold; color: red;">BARKOD YOK</span>
+            {% endif %}
+        </div>
+
+       <div class="footer-content">
+    <div class="model-no">
+        {{ product.name|default:"Ürün Adı Belirtilmemiş" }}
+    </div>
+    <div class="company-name">
+        Genç Tarım
+    </div>
+</div>
+    </div>
+    
+</body>
+</html>

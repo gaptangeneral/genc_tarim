@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Satış Geçmişi{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Satış Geçmişi</h1>
+
+    <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+        <form method="get" action="{% url 'sales:sale_history_list' %}">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label for="customer" class="block text-sm font-medium text-gray-700">Müşteri</label>
+                    <select name="customer" id="customer" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        <option value="">Tüm Müşteriler</option>
+                        {% for c in customers %}
+                            <option value="{{ c.id }}" {% if filtered_customer == c.id|stringformat:"s" %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="start_date" class="block text-sm font-medium text-gray-700">Başlangıç Tarihi</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ filtered_start_date }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="end_date" class="block text-sm font-medium text-gray-700">Bitiş Tarihi</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ filtered_end_date }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div class="self-end">
+                    <button type="submit" class="btn btn-primary w-full">Filtrele</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow-md rounded-lg">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Satış ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Müşteri</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tutar</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Personel</th>
+                    <th class="relative px-6 py-3"><span class="sr-only">Detay</span></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for sale in sales %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ sale.id }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ sale.customer }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ sale.created_at|date:"d.m.Y H:i" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₺{{ sale.grand_total|floatformat:2 }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ sale.salesperson.get_full_name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{% url 'sales:sale_history_detail' sale.pk %}" class="text-indigo-600 hover:text-indigo-900">Detay Gör</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-10 text-gray-500">Bu filtrelere uygun satış bulunamadı.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if is_paginated %}
+    <div class="mt-6">
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

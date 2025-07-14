@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Satış Fişi #{{ sale.id }}</title>
+    <style>
+        body { font-family: monospace; width: 300px; margin: 0 auto; }
+        .item { display: flex; justify-content: space-between; }
+        .totals { margin-top: 15px; border-top: 1px dashed black; padding-top: 5px; }
+        h3, p { margin: 5px 0; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body onload="window.print();">
+    <div class="text-center">
+        <h3>İŞLETME ADINIZ</h3>
+        <p>Adresiniz ve Telefon Numaranız</p>
+    </div>
+    <hr>
+    <p>Fiş No: #{{ sale.id }}</p>
+    <p>Tarih: {{ sale.created_at|date:"d.m.Y H:i" }}</p>
+    <p>Müşteri: {{ sale.customer.get_full_name }}</p>
+    <hr>
+    {% for item in sale.items.all %}
+        <div class="item">
+            <span>{{ item.quantity }}x {{ item.product.name|truncatechars:20 }}</span>
+            <span>₺{{ item.get_total_price|floatformat:2 }}</span>
+        </div>
+    {% endfor %}
+    <div class="totals">
+        <div class="item"><strong>Ara Toplam:</strong><span>₺{{ sale.subtotal|floatformat:2 }}</span></div>
+        <div class="item"><strong>KDV Toplam:</strong><span>₺{{ sale.vat_total|floatformat:2 }}</span></div>
+        <div class="item"><strong>GENEL TOPLAM:</strong><strong>₺{{ sale.grand_total|floatformat:2 }}</strong></div>
+    </div>
+    <div class="text-center" style="margin-top: 20px;">
+        <p>Teşekkür Ederiz!</p>
+    </div>
+</body>
+</html>

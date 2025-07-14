@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow max-w-4xl mx-auto">
+    <h1 class="text-xl font-semibold text-gray-900 mb-6">{{ page_title }}</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="space-y-6">
+            <div>
+                <label for="{{ form.customer_type.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Müşteri Tipi</label>
+                {{ form.customer_type }}
+            </div>
+
+            <div id="individual-fields" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Adı</label>
+                        {{ form.first_name }}
+                    </div>
+                    <div>
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Soyadı</label>
+                        {{ form.last_name }}
+                    </div>
+                </div>
+                <div>
+                    <label for="{{ form.tckn.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">T.C. Kimlik Numarası</label>
+                    {{ form.tckn }}
+                </div>
+            </div>
+
+            <div id="corporate-fields" class="space-y-6">
+                <div>
+                    <label for="{{ form.company_name.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Firma Ticari Ünvanı</label>
+                    {{ form.company_name }}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.tax_office.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Vergi Dairesi</label>
+                        {{ form.tax_office }}
+                    </div>
+                    <div>
+                        <label for="{{ form.tax_number.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Vergi Numarası</label>
+                        {{ form.tax_number }}
+                    </div>
+                </div>
+                 <div>
+                    <label for="{{ form.contact_person.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Yetkili Kişi</label>
+                    {{ form.contact_person }}
+                </div>
+            </div>
+            
+            <hr/>
+
+            <div class="space-y-6">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">E-posta Adresi</label>
+                        {{ form.email }}
+                    </div>
+                    <div>
+                        <label for="{{ form.phone_number.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Telefon Numarası</label>
+                        {{ form.phone_number }}
+                    </div>
+                </div>
+                <div>
+                    <label for="{{ form.address.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Adres</label>
+                    {{ form.address }}
+                </div>
+                <div>
+                    <label for="{{ form.notes.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Müşteri Hakkında Notlar</label>
+                    {{ form.notes }}
+                </div>
+                 <div class="flex items-center pt-2 gap-x-3">
+                    {{ form.is_active }}
+                    <label for="{{ form.is_active.id_for_label }}" class="font-medium text-gray-900">Müşteri Aktif</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 flex justify-end gap-2">
+            <a href="{% url 'customers:customer_list' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition-all">İptal</a>
+            <button type="submit" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-all">Kaydet</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customerTypeSelect = document.getElementById('{{ form.customer_type.id_for_label }}');
+    const individualFields = document.getElementById('individual-fields');
+    const corporateFields = document.getElementById('corporate-fields');
+
+    function toggleFields() {
+        if (customerTypeSelect.value === 'INDIVIDUAL') {
+            individualFields.style.display = 'block';
+            corporateFields.style.display = 'none';
+        } else {
+            individualFields.style.display = 'none';
+            corporateFields.style.display = 'block';
+        }
+    }
+
+    // Sayfa yüklendiğinde doğru alanları göster
+    toggleFields();
+
+    // Seçim değiştiğinde alanları güncelle
+    customerTypeSelect.addEventListener('change', toggleFields);
+});
+</script>
+
+{% endblock %}

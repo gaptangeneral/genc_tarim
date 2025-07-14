@@ -1,0 +1,53 @@
+<tbody class="bg-white divide-y divide-gray-200">
+    {% for product in products %}
+    <tr class="hover:bg-gray-50 transition-all">
+        <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10">
+                    {% if product.image %}
+                        <img class="h-10 w-10 rounded-md object-cover" src="{{ product.image.url }}" alt="{{ product.name }}">
+                    {% else %}
+                        <span class="h-10 w-10 rounded-md bg-gray-100 flex items-center justify-center">
+                            <i class="fas fa-image text-gray-300"></i>
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">{{ product.name }}</div>
+                    <div class="text-sm text-gray-500">{{ product.brand.name|default_if_none:'' }}</div>
+                </div>
+            </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ product.category.name|default_if_none:'' }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{{ product.product_code }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{{ product.stock }} Adet</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">₺{{ product.selling_price|floatformat:2 }}</td>
+        <td class="px-6 py-4 whitespace-nowrap">
+            {% if product.stock == 0 %}
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Tükendi</span>
+            {% elif product.is_low_stock %}
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Düşük Stok</span>
+            {% else %}
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Stokta</span>
+            {% endif %}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <div class="flex items-center justify-end gap-x-4">
+                <a href="{% url 'inventory:product_detail' slug=product.slug %}" class="text-primary hover:text-dark" title="Detayları Görüntüle">
+                    <i class="fas fa-eye"></i>
+                </a>
+                <a href="{% url 'inventory:product_update' slug=product.slug %}" class="text-primary hover:text-dark" title="Düzenle">
+                    <i class="fas fa-pencil-alt"></i>
+                </a>
+                <a href="{% url 'inventory:product_label_print' slug=product.slug %}" target="_blank" class="text-primary hover:text-dark" title="Etiket Yazdır">
+                    <i class="fas fa-print"></i>
+                </a>
+            </div>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="7" class="text-center py-10 text-gray-500">Arama kriterlerinize uygun ürün bulunamadı.</td>
+    </tr>
+    {% endfor %}
+</tbody>

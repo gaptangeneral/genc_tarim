@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="bg-white p-6 rounded-xl shadow">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">{{ page_title }}</h1>
+                <p class="text-sm text-gray-500">Müşteri Tipi: {{ customer.get_customer_type_display }}</p>
+            </div>
+            <a href="{% url 'customers:customer_update' pk=customer.pk %}" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg text-sm">Düzenle</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow h-fit">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">İletişim Bilgileri</h3>
+                <dl class="space-y-4 text-sm">
+                    <div><dt class="font-medium text-gray-500">Telefon</dt><dd class="mt-1 text-gray-900">{{ customer.phone_number|default:"-" }}</dd></div>
+                    <div><dt class="font-medium text-gray-500">E-posta</dt><dd class="mt-1 text-gray-900">{{ customer.email|default:"-" }}</dd></div>
+                    <div><dt class="font-medium text-gray-500">Adres</dt><dd class="mt-1 text-gray-900 whitespace-pre-wrap">{{ customer.address|default:"-" }}</dd></div>
+                    {% if customer.notes %}
+                    <div><dt class="font-medium text-gray-500">Notlar</dt><dd class="mt-1 text-gray-900 whitespace-pre-wrap">{{ customer.notes }}</dd></div>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-xl shadow">
+                <div class="p-4 border-b">
+                    <h3 class="text-lg font-semibold text-gray-900">Müşterinin Servis Geçmişi</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Servis ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Makine</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for record in service_records %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm"><a href="{% url 'service:servicerecord_detail' pk=record.pk %}" class="font-mono text-primary hover:underline">#{{ record.service_id|stringformat:".8s" }}</a></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{ record.machine_brand }} {{ record.machine_model }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">{{ record.get_status_display }}</span></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ record.created_at|date:"d M Y" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-6 text-sm text-gray-500">Bu müşteri için servis kaydı bulunmuyor.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Fatura #{{ sale.id }}</title>
+    <style>
+        body { font-family: sans-serif; }
+        /* ... Fatura için daha detaylı stiller ... */
+    </style>
+</head>
+<body onload="window.print();">
+    <h1>FATURA</h1>
+    <p><strong>Fatura No:</strong> {{ sale.id }}</p>
+    <p><strong>Tarih:</strong> {{ sale.created_at|date:"d.m.Y" }}</p>
+    <hr>
+    <h2>Müşteri Bilgileri</h2>
+    <p>{{ sale.customer.get_full_name }}</p>
+    <p>{{ sale.customer.address }}</p>
+    {% if sale.customer.customer_type == 'CORPORATE' %}
+        <p>Vergi Dairesi: {{ sale.customer.tax_office }}</p>
+        <p>Vergi No: {{ sale.customer.tax_number }}</p>
+    {% endif %}
+    <hr>
+    <table border="1" cellpadding="5" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th>Ürün Adı</th>
+                <th>Miktar</th>
+                <th>Birim Fiyat</th>
+                <th>KDV (%)</th>
+                <th>Toplam</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in sale.items.all %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>₺{{ item.unit_price|floatformat:2 }}</td>
+                <td>%{{ item.vat_rate|floatformat:0 }}</td>
+                <td>₺{{ item.get_total_price|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </body>
+</html>

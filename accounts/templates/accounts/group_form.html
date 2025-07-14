@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow max-w-4xl mx-auto">
+    <h1 class="text-xl font-semibold text-gray-900 mb-6">{{ page_title }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="space-y-4">
+            <div>
+                <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Grup Adı</label>
+                {{ form.name }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.permissions.label }}</label>
+                <div class="p-4 border rounded-lg max-h-96 overflow-y-auto space-y-2">
+                    {{ form.permissions }}
+                </div>
+            </div>
+        </div>
+        <div class="mt-8 flex justify-end gap-2">
+            <a href="{% url 'accounts:group_list' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">İptal</a>
+            <button type="submit" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg">Kaydet</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

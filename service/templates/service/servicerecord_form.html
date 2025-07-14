@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+    {{ form.media.css }}
+{% endblock %}
+
+{% block content %}
+{% if form.errors %}
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+            <p class="font-bold">Lütfen aşağıdaki hataları düzeltin:</p>
+            <ul>
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li class="list-disc ml-5">- {{ field|title }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+<div class="bg-white p-8 rounded-xl shadow max-w-4xl mx-auto">
+    <h1 class="text-xl font-semibold text-gray-900 mb-6">{{ page_title }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="space-y-6">
+            <div class="p-4 border border-gray-200 rounded-lg">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Müşteri ve Makine Bilgileri</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.customer.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Müşteri</label>
+                        <div class="flex items-center gap-x-2">
+                            {{ form.customer }}
+                            <button type="button" id="quick-add-customer-btn" class="flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg w-10 h-10 flex items-center justify-center" title="Yeni Müşteri Ekle">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        {% if form.customer.errors %}<div class="text-red-500 text-sm mt-1">{{ form.customer.errors }}</div>{% endif %}
+                    </div>
+                    <div><label for="{{ form.machine_brand.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Makine Markası</label>{{ form.machine_brand }}{% if form.machine_brand.errors %}<div class="text-red-500 text-sm mt-1">{{ form.machine_brand.errors }}</div>{% endif %}</div>
+                    <div><label for="{{ form.machine_model.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Makine Modeli</label>{{ form.machine_model }}{% if form.machine_model.errors %}<div class="text-red-500 text-sm mt-1">{{ form.machine_model.errors }}</div>{% endif %}</div>
+                    <div><label for="{{ form.serial_number.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Seri Numarası</label>{{ form.serial_number }}{% if form.serial_number.errors %}<div class="text-red-500 text-sm mt-1">{{ form.serial_number.errors }}</div>{% endif %}</div>
+                </div>
+            </div>
+            <div class="p-4 border border-gray-200 rounded-lg">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Servis Detayları</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div><label for="{{ form.status.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Servis Durumu</label>{{ form.status }}{% if form.status.errors %}<div class="text-red-500 text-sm mt-1">{{ form.status.errors }}</div>{% endif %}</div>
+                    <div><label for="{{ form.assigned_to.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Atanan Personel</label>{{ form.assigned_to }}{% if form.assigned_to.errors %}<div class="text-red-500 text-sm mt-1">{{ form.assigned_to.errors }}</div>{% endif %}</div>
+                </div>
+                 <div class="mt-6"><label for="{{ form.customer_complaint.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Müşteri Şikayeti/Açıklama</label>{{ form.customer_complaint }}{% if form.customer_complaint.errors %}<div class="text-red-500 text-sm mt-1">{{ form.customer_complaint.errors }}</div>{% endif %}</div>
+                 <div class="mt-6"><label for="{{ form.technician_notes.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Teknisyen Notları</label>{{ form.technician_notes }}{% if form.technician_notes.errors %}<div class="text-red-500 text-sm mt-1">{{ form.technician_notes.errors }}</div>{% endif %}</div>
+            </div>
+        </div>
+        <div class="mt-8 flex justify-end gap-2">
+            <a href="{% url 'service:servicerecord_list' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition-all">İptal</a>
+            <button type="submit" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-all">Kaydet</button>
+        </div>
+    </form>
+</div>
+
+<<div id="quick-add-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg m-4">
+        <h3 id="modal-title" class="text-lg font-semibold text-gray-900 mb-4">Yeni Müşteri Ekle</h3>
+        <form id="quick-add-form">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium">Müşteri Tipi</label>
+                    <select name="customer_type" id="id_modal_customer_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="INDIVIDUAL" selected>Bireysel Müşteri</option>
+                        <option value="CORPORATE">Kurumsal Müşteri</option>
+                    </select>
+                </div>
+                
+                <div id="modal-individual-fields" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium">Adı</label><input type="text" name="first_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium">Soyadı</label><input type="text" name="last_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">T.C. Kimlik Numarası</label>
+                        <input type="text" name="tckn" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+
+                <div id="modal-corporate-fields" class="hidden space-y-4">
+                     <div><label class="block text-sm font-medium">Firma Ticari Ünvanı</label><input type="text" name="company_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                     <div><label class="block text-sm font-medium">Yetkili Kişi</label><input type="text" name="contact_person" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                     <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium">Vergi Dairesi</label><input type="text" name="tax_office" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                        <div><label class="block text-sm font-medium">Vergi Numarası</label><input type="text" name="tax_number" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                    </div>
+                </div>
+
+                 <div><label class="block text-sm font-medium">Telefon Numarası</label><input type="text" name="phone_number" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                 <p id="modal-error" class="text-red-600 text-sm mt-1"></p>
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" id="modal-cancel-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition-all">İptal</button>
+                <button type="submit" id="modal-save-btn" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-all">Müşteriyi Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ form.media.js }} {# Select2 için gerekli JS #}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Hızlı Müşteri Ekleme Modal'ı için olan kod
+    const modal = document.getElementById('quick-add-modal');
+    const openBtn = document.getElementById('quick-add-customer-btn');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+    const quickAddForm = document.getElementById('quick-add-form');
+    const mainCustomerSelect = document.getElementById('{{ form.customer.id_for_label }}');
+    const modalError = document.getElementById('modal-error');
+    
+    const modalCustomerType = document.getElementById('id_modal_customer_type');
+    const individualFields = document.getElementById('modal-individual-fields');
+    const corporateFields = document.getElementById('modal-corporate-fields');
+
+    function toggleModalFields() {
+        if (modalCustomerType.value === 'INDIVIDUAL') {
+            individualFields.style.display = 'block';
+            corporateFields.style.display = 'none';
+        } else {
+            corporateFields.style.display = 'block';
+            individualFields.style.display = 'none';
+        }
+    }
+    if (modalCustomerType) {
+        modalCustomerType.addEventListener('change', toggleModalFields);
+    }
+    
+    const openModal = () => { toggleModalFields(); modal.classList.remove('hidden'); };
+    const closeModal = () => { modal.classList.add('hidden'); quickAddForm.reset(); modalError.textContent = ''; };
+
+    if (openBtn) { openBtn.addEventListener('click', openModal); }
+    if (cancelBtn) { cancelBtn.addEventListener('click', closeModal); }
+    if (modal) {
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    }
+
+    if (quickAddForm) {
+        quickAddForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            modalError.textContent = '';
+            
+            fetch("{% url 'customers:add_customer_ajax' %}", {
+                method: 'POST',
+                body: new FormData(quickAddForm),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            })
+            .then(response => {
+                if (!response.ok) { return response.json().then(err => Promise.reject(err)); }
+                return response.json();
+            })
+            .then(data => {
+                if (data.id) {
+                    const newOption = new Option(data.name, data.id, true, true);
+                    mainCustomerSelect.appendChild(newOption);
+                    mainCustomerSelect.dispatchEvent(new Event('change'));
+                    closeModal();
+                }
+            })
+            .catch(errorData => {
+                console.error('Hata:', errorData);
+                let errorMessage = "Lütfen tüm zorunlu alanları doldurun veya girdiğiniz bilgileri kontrol edin.";
+                if (errorData.error) {
+                    try {
+                        const errors = JSON.parse(errorData.error);
+                        errorMessage = Object.values(errors).map(e => e[0].message).join(' ');
+                    } catch(e) { errorMessage = "Bilinmeyen bir hata oluştu." }
+                }
+                modalError.textContent = errorMessage;
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

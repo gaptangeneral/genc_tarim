@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow max-w-4xl mx-auto">
+    <h1 class="text-xl font-semibold text-gray-900 mb-6">{{ page_title }}</h1>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+            
+            <div class="md:col-span-2">
+                <label for="{{ form.name.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Ürün Adı</label>
+                {{ form.name }}
+            </div>
+
+            <div>
+                <label for="{{ form.category.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Kategori</label>
+                <div class="flex items-center gap-x-2">
+                    {{ form.category }}
+                    <button type="button" class="quick-add-btn flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg w-9 h-9 flex items-center justify-center" data-field="category" data-url="{% url 'inventory:add_category_ajax' %}" data-title="Yeni Kategori Ekle">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.brand.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Marka</label>
+                <div class="flex items-center gap-x-2">
+                    {{ form.brand }}
+                    <button type="button" class="quick-add-btn flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg w-9 h-9 flex items-center justify-center" data-field="brand" data-url="{% url 'inventory:add_brand_ajax' %}" data-title="Yeni Marka Ekle">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.supplier.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Tedarikçi</label>
+                <div class="flex items-center gap-x-2">
+                    {{ form.supplier }}
+                    <button type="button" class="quick-add-btn flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg w-9 h-9 flex items-center justify-center" data-field="supplier" data-url="{% url 'inventory:add_supplier_ajax' %}" data-title="Yeni Tedarikçi Ekle">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div><label for="{{ form.barcode_data.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Barkod Numarası</label>{{ form.barcode_data }}</div>
+            <div><label for="{{ form.purchase_price.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Alış Fiyatı (₺)</label>{{ form.purchase_price }}</div>
+            <div><label for="{{ form.selling_price.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Satış Fiyatı (₺)</label>{{ form.selling_price }}</div>
+             <div>
+                <label for="{{ form.initial_stock.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Başlangıç Stok Miktarı</label>
+                {{ form.initial_stock }}
+                {% if form.initial_stock.errors %}<div class="text-red-500 text-sm mt-1">{{ form.initial_stock.errors }}</div>{% endif %}
+                <p class="text-xs text-gray-500 mt-1">{{ form.initial_stock.help_text }}</p>
+            </div>
+            <div><label for="{{ form.min_stock_level.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Minimum Stok Seviyesi</label>{{ form.min_stock_level }}</div>
+            <div><label for="{{ form.image.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Ürün Resmi</label>{{ form.image }}</div>
+            <div class="md:col-span-2 flex items-center pt-2 gap-x-3">{{ form.is_active }}<div><label for="{{ form.is_active.id_for_label }}" class="font-medium text-gray-900">Ürün Aktif</label><p class="text-gray-500 text-sm">Pasif ürünler listede ve satışta görünmez.</p></div></div>
+        </div>
+
+        <div class="mt-8 flex justify-end gap-2">
+            <a href="{% url 'inventory:product_list' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition-all">İptal</a>
+            <button type="submit" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-all flex items-center">Kaydet</button>
+        </div>
+    </form>
+</div>
+
+<div id="quick-add-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
+        <h3 id="modal-title" class="text-lg font-semibold text-gray-900 mb-4"></h3>
+        <form id="quick-add-form">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <div>
+                <label for="modal-name-input" class="block text-sm font-medium text-gray-700">İsim</label>
+                <input type="text" id="modal-name-input" name="name" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p id="modal-error" class="text-red-500 text-sm mt-1"></p>
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" id="modal-cancel-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition-all">İptal</button>
+                <button type="submit" id="modal-save-btn" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-all">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('quick-add-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalForm = document.getElementById('quick-add-form');
+    const modalNameInput = document.getElementById('modal-name-input');
+    const modalError = document.getElementById('modal-error');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const modalSaveBtn = document.getElementById('modal-save-btn');
+    
+    let targetSelectElement; // Hangi select kutusunu güncelleyeceğimizi tutar
+    let ajaxUrl;
+
+    document.querySelectorAll('.quick-add-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const fieldName = e.currentTarget.dataset.field;
+            ajaxUrl = e.currentTarget.dataset.url;
+            modalTitle.textContent = e.currentTarget.dataset.title;
+            targetSelectElement = document.getElementById(`id_${fieldName}`);
+            modal.classList.remove('hidden');
+            modalNameInput.focus();
+        });
+    });
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modalNameInput.value = '';
+        modalError.textContent = '';
+    };
+
+    modalCancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    modalForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        modalSaveBtn.disabled = true;
+        modalError.textContent = '';
+        
+        fetch(ajaxUrl, {
+            method: 'POST',
+            body: new FormData(modalForm),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                // Başarılı: Yeni option oluştur ve seçili yap
+                const newOption = new Option(data.name, data.id, true, true);
+                targetSelectElement.appendChild(newOption);
+                targetSelectElement.dispatchEvent(new Event('change'));
+                closeModal();
+            } else {
+                // Hatalı: Hata mesajını göster
+                modalError.textContent = data.error || 'Bir hata oluştu.';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            modalError.textContent = 'Sunucuyla iletişim kurulamadı.';
+        })
+        .finally(() => {
+            modalSaveBtn.disabled = false;
+        });
+    });
+});
+</script>
+{% endblock %}

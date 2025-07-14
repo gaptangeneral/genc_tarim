@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="bg-white p-6 rounded-xl shadow">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">{{ page_title }}</h1>
+                <p class="text-sm text-gray-500">Oluşturulma: {{ record.created_at|date:"d M Y, H:i" }}</p>
+            </div>
+            <a href="{% url 'service:servicerecord_update' pk=record.pk %}" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg text-sm">Kaydı Düzenle</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Mali Bilgiler</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label for="id_labor_cost" class="block text-sm font-medium text-gray-700">İşçilik Ücreti (₺)</label>
+                            <input type="number" step="0.01" name="labor_cost" id="id_labor_cost" value="{{ record.labor_cost|default:0 }}" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label for="id_kdv_rate" class="block text-sm font-medium text-gray-700">KDV Oranı (%)</label>
+                            <input type="number" step="0.01" name="kdv_rate" id="id_kdv_rate" value="{{ record.kdv_rate|default:20 }}" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+<button type="submit" name="update_financials" class="w-full bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg text-sm">Güncelle</button>
+                        </div>
+                    </div>
+                </form>
+                 <div class="mt-6 pt-4 border-t text-right space-y-2 text-sm">
+                    <p class="text-gray-600">Parça Toplamı: <span class="font-semibold text-gray-800">₺{{ parts_total|floatformat:2 }}</span></p>
+                    <p class="text-gray-600">Ara Toplam (Parça + İşçilik): <span class="font-semibold text-gray-800">₺{{ subtotal|floatformat:2 }}</span></p>
+                    <p class="text-gray-600">KDV ({{ record.kdv_rate|floatformat:2 }}%): <span class="font-semibold text-gray-800">₺{{ kdv_amount|floatformat:2 }}</span></p>
+                    <p class="text-xl font-bold text-gray-900">Genel Toplam: <span class="font-semibold">₺{{ grand_total|floatformat:2 }}</span></p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Kullanılan Parçalar</h3>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <tbody>
+                        {% for part_used in record.parts_used.all %}
+                        <tr class="text-sm">
+                            <td class="py-2 font-medium text-gray-800">{{ part_used.part.name }}</td>
+                            <td class="py-2 text-gray-600">{{ part_used.quantity }} Adet</td>
+                            <td class="py-2 text-right text-gray-800">₺{{ part_used.price_at_time_of_use|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="py-4 text-center text-sm text-gray-500">Bu serviste henüz parça kullanılmadı.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <form method="post" class="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    {% csrf_token %}
+                    <div class="md:col-span-2">
+                        <label for="{{ part_form.part.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Eklenecek Parça</label>
+                        <div class="flex items-center gap-x-2">
+                            {{ part_form.part }}
+                            <button type="button" id="quick-add-part-btn" class="flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg w-10 h-10 flex items-center justify-center" title="Yeni Parça Ekle">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div><label for="{{ part_form.quantity.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Adet</label>{{ part_form.quantity }}</div>
+                    <div><button type="submit" class="w-full bg-gray-700 hover:bg-black text-white px-4 py-2 rounded-lg text-sm">Parça Ekle</button></div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Servis Detayları</h3>
+                <dl class="space-y-4 text-sm">
+                    <div><dt class="font-medium text-gray-500">Durum</dt><dd class="mt-1 text-gray-900"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">{{ record.get_status_display }}</span></dd></div>
+                    <div><dt class="font-medium text-gray-500">Atanan Personel</dt><dd class="mt-1 text-gray-900">{{ record.assigned_to.get_full_name|default:record.assigned_to.username|default:"Atanmadı" }}</dd></div>
+                    <div class="col-span-full"><dt class="font-medium text-gray-500">Müşteri Şikayeti</dt><dd class="mt-1 text-gray-900 whitespace-pre-wrap">{{ record.customer_complaint }}</dd></div>
+                    <div class="col-span-full"><dt class="font-medium text-gray-500">Teknisyen Notları</dt><dd class="mt-1 text-gray-900 whitespace-pre-wrap">{{ record.technician_notes|default:"-" }}</dd></div>
+                </dl>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow h-fit">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Müşteri & Makine</h3>
+                <dl class="space-y-4 text-sm">
+                    <div><dt class="font-medium text-gray-500">Müşteri</dt><dd class="mt-1 text-gray-900">{{ record.customer }}</dd></div>
+                    <div><dt class="font-medium text-gray-500">Telefon</dt><dd class="mt-1 text-gray-900">{{ record.customer.phone_number }}</dd></div>
+                    <hr>
+                    <div><dt class="font-medium text-gray-500">Makine Markası</dt><dd class="mt-1 text-gray-900">{{ record.machine_brand }}</dd></div>
+                    <div><dt class="font-medium text-gray-500">Makine Modeli</dt><dd class="mt-1 text-gray-900">{{ record.machine_model }}</dd></div>
+                    <div><dt class="font-medium text-gray-500">Seri No</dt><dd class="mt-1 text-gray-900">{{ record.serial_number|default:"-" }}</dd></div>
+                </dl>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow h-fit">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Servis Takip Barkodu</h3>
+                <div class="text-center">
+                    {% if record.barcode_image %}
+                        <img src="{{ record.barcode_image.url }}" alt="Servis Barkodu" class="mx-auto h-24">
+                        <a href="{% url 'service:service_label_print' pk=record.pk %}" target="_blank" class="mt-4 inline-block bg-gray-700 hover:bg-black text-white px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-print mr-2"></i>Etiketi Yazdır
+                        </a>
+                    {% else %}
+                        <p class="text-sm text-gray-500">Bu servis için barkod bulunmuyor.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="quick-add-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg m-4">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Yeni Yedek Parça Ekle</h3>
+        <form id="quick-add-form" class="space-y-4">
+            <div><label class="block text-sm font-medium">Parça Adı (*)</label><input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+            
+            <div><label class="block text-sm font-medium">Barkod</label><input type="text" name="barcode_data" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium">Kategori</label>
+                    <select name="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="">---------</option>
+                        {% for c in all_categories %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Marka</label>
+                    <select name="brand" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="">---------</option>
+                        {% for b in all_brands %}<option value="{{ b.pk }}">{{ b.name }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div><label class="block text-sm font-medium">Satış Fiyatı (₺) (*)</label><input type="number" step="0.01" name="selling_price" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+            
+            <p id="modal-error" class="text-red-500 text-sm mt-1"></p>
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" id="modal-cancel-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">İptal</button>
+                <button type="submit" id="modal-save-btn" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg">Parçayı Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('quick-add-modal');
+    const openBtn = document.getElementById('quick-add-part-btn');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+    const quickAddForm = document.getElementById('quick-add-form');
+    const mainPartSelect = document.querySelector('[name="part"]');
+    const modalError = document.getElementById('modal-error');
+
+    // Savunmacı kodlama: Elementlerin varlığını kontrol et
+    if (modal && openBtn && cancelBtn && quickAddForm && mainPartSelect) {
+        const openModal = () => { modal.classList.remove('hidden'); };
+        const closeModal = () => { modal.classList.add('hidden'); quickAddForm.reset(); if(modalError) modalError.textContent = ''; };
+
+        openBtn.addEventListener('click', openModal);
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+        quickAddForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if(modalError) modalError.textContent = '';
+            
+            // CSRF token'ını FormData'ya dahil etmeye gerek yok, Django bunu çerezden halleder.
+            const formData = new FormData(quickAddForm);
+            
+            fetch("{% url 'inventory:add_product_ajax' %}", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            })
+            .then(response => {
+                if (!response.ok) { return response.json().then(err => Promise.reject(err)); }
+                return response.json();
+            })
+            .then(data => {
+                if (data.id) {
+                    const newOption = new Option(data.name, data.id, true, true);
+                    mainPartSelect.appendChild(newOption);
+                    // Select2 kullanıyorsanız aşağıdaki satır gerekebilir:
+                    // $(mainPartSelect).val(data.id).trigger('change');
+                    mainPartSelect.dispatchEvent(new Event('change'));
+                    closeModal();
+                }
+            })
+            .catch(errorData => {
+                console.error('Hata Detayları:', errorData);
+                if (errorData.errors) {
+                    // Django form hatalarını göster
+                    let error_html = "Lütfen hataları düzeltin: <ul>";
+                    for (const field in errorData.errors) {
+                        error_html += `<li>${field}: ${errorData.errors[field][0].message}</li>`;
+                    }
+                    error_html += "</ul>";
+                    modalError.innerHTML = error_html;
+                } else {
+                    modalError.textContent = "Bilinmeyen bir hata oluştu. Lütfen tüm zorunlu alanları doldurun.";
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

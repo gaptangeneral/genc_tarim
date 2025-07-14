@@ -1,0 +1,33 @@
+{# inventory/templates/partials/pagination.html #}
+
+{% if page_obj.has_other_pages %}
+<nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+        <span class="sr-only">Önceki</span>
+        <i class="fas fa-chevron-left"></i>
+    </a>
+    {% else %}
+    <span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-300">
+        <span class="sr-only">Önceki</span>
+        <i class="fas fa-chevron-left"></i>
+    </span>
+    {% endif %}
+
+    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+        Sayfa {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+        <span class="sr-only">Sonraki</span>
+        <i class="fas fa-chevron-right"></i>
+    </a>
+    {% else %}
+    <span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-300">
+        <span class="sr-only">Sonraki</span>
+        <i class="fas fa-chevron-right"></i>
+    </span>
+    {% endif %}
+</nav>
+{% endif %}

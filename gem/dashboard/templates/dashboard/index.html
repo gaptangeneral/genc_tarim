@@ -1,0 +1,430 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Zaman Filtresi -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border">
+        <div class="flex flex-wrap items-center gap-3">
+            <span class="font-semibold text-gray-700 mr-2">Zaman Aralığı:</span>
+            <a href="?period=7" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {% if active_period == '7' %}bg-blue-500 text-white shadow-md{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                Son 7 Gün
+            </a>
+            <a href="?period=30" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {% if active_period == '30' %}bg-blue-500 text-white shadow-md{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                Son 30 Gün
+            </a>
+            <a href="?period=month" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {% if active_period == 'month' %}bg-blue-500 text-white shadow-md{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                Bu Ay
+            </a>
+            <a href="?period=year" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {% if active_period == 'year' %}bg-blue-500 text-white shadow-md{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                Bu Yıl
+            </a>
+        </div>
+    </div>
+
+    <!-- Satış İstatistikleri (Filtreye Bağlı) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-green-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-lira-sign text-green-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-gray-500 text-sm font-medium">Toplam Ciro</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mt-1">₺{{ total_sales_amount|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-shopping-cart text-blue-500 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-gray-500 text-sm font-medium">Toplam Satış</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mt-1">{{ total_sales_count }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-purple-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-user-plus text-purple-500 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-gray-500 text-sm font-medium">Yeni Müşteriler</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mt-1">{{ new_customers_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Satış Grafikleri -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Günlük Satış Cirosu</h3>
+                <div class="text-sm text-gray-500">
+                    <i class="fas fa-chart-line mr-1"></i>
+                    Trend Analizi
+                </div>
+            </div>
+            <div class="relative h-80">
+                <canvas id="dailySalesChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Top 5 Ürün</h3>
+                <div class="text-sm text-gray-500">
+                    <i class="fas fa-trophy mr-1"></i>
+                    Adet Bazında
+                </div>
+            </div>
+            <div class="relative h-80">
+                <canvas id="topProductsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Genel İstatistikler -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">Genel İstatistikler</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <div class="bg-blue-100 p-3 rounded-full mx-auto mb-3 w-fit">
+                    <i class="fas fa-boxes text-blue-500 text-xl"></i>
+                </div>
+                <p class="text-gray-500 text-sm font-medium">Toplam Ürün</p>
+                <h4 class="text-xl font-bold text-gray-900 mt-1">{{ total_products }}</h4>
+            </div>
+
+            <div class="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <div class="bg-indigo-100 p-3 rounded-full mx-auto mb-3 w-fit">
+                    <i class="fas fa-tools text-indigo-500 text-xl"></i>
+                </div>
+                <p class="text-gray-500 text-sm font-medium">Aktif Servisler</p>
+                <h4 class="text-xl font-bold text-gray-900 mt-1">{{ active_services }}</h4>
+            </div>
+
+            <div class="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <div class="bg-orange-100 p-3 rounded-full mx-auto mb-3 w-fit">
+                    <i class="fas fa-exclamation-triangle text-orange-500 text-xl"></i>
+                </div>
+                <p class="text-gray-500 text-sm font-medium">Düşük Stok</p>
+                <h4 class="text-xl font-bold text-gray-900 mt-1">{{ low_stock_products }}</h4>
+            </div>
+
+            <div class="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <div class="bg-red-100 p-3 rounded-full mx-auto mb-3 w-fit">
+                    <i class="fas fa-times-circle text-red-500 text-xl"></i>
+                </div>
+                <p class="text-gray-500 text-sm font-medium">Tükenen Ürünler</p>
+                <h4 class="text-xl font-bold text-gray-900 mt-1">{{ out_of_stock_products }}</h4>
+            </div>
+
+            <div class="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 md:col-span-3 lg:col-span-1">
+                <div class="bg-green-100 p-3 rounded-full mx-auto mb-3 w-fit">
+                    <i class="fas fa-users text-green-600 text-xl"></i>
+                </div>
+                <p class="text-gray-500 text-sm font-medium">Aktif Müşteriler</p>
+                <h4 class="text-xl font-bold text-gray-900 mt-1">{{ total_customers|default:0 }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Servis ve Parça Grafikleri -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Son 7 Günlük Servis Kayıtları</h3>
+                <div class="text-sm text-gray-500">
+                    <i class="fas fa-calendar-alt mr-1"></i>
+                    Günlük Trend
+                </div>
+            </div>
+            <div class="relative h-80">
+                <canvas id="dailyServiceChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Top 5 Yedek Parça</h3>
+                <div class="text-sm text-gray-500">
+                    <i class="fas fa-cog mr-1"></i>
+                    En Çok Kullanılan
+                </div>
+            </div>
+            <div class="relative h-80">
+                <canvas id="topPartsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Son Hareketler -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Son Eklenen Ürünler</h3>
+                <a href="#" class="text-blue-500 hover:text-blue-600 text-sm font-medium">Tümünü Gör</a>
+            </div>
+            <div class="space-y-3">
+                {% for product in latest_products %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    <div class="flex items-center">
+                        <div class="bg-blue-100 p-2 rounded-lg mr-3">
+                            <i class="fas fa-box text-blue-500"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ product.name }}</p>
+                            <p class="text-sm text-gray-500">{{ product.created_at|date:"d M Y" }}</p>
+                        </div>
+                    </div>
+                    <span class="text-sm font-medium text-gray-600">{{ product.quantity }} adet</span>
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-box-open text-3xl mb-2"></i>
+                    <p>Henüz ürün eklenmemiş</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Son Servis Kayıtları</h3>
+                <a href="#" class="text-blue-500 hover:text-blue-600 text-sm font-medium">Tümünü Gör</a>
+            </div>
+            <div class="space-y-3">
+                {% for service in latest_services %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    <div class="flex items-center">
+                        <div class="bg-indigo-100 p-2 rounded-lg mr-3">
+                            <i class="fas fa-tools text-indigo-500"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ service.device_type }}</p>
+                            <p class="text-sm text-gray-500">{{ service.created_at|date:"d M Y" }}</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                        {% if service.status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                        {% elif service.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                        {% elif service.status == 'DELIVERED' %}bg-green-100 text-green-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ service.get_status_display }}
+                    </span>
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-tools text-3xl mb-2"></i>
+                    <p>Henüz servis kaydı yok</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Grafik varsayılan ayarları
+        Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+        Chart.defaults.color = '#6B7280';
+        
+        // Günlük Servis Grafiği
+        const dailyServiceCtx = document.getElementById('dailyServiceChart');
+        if (dailyServiceCtx) {
+            new Chart(dailyServiceCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ daily_service_labels_json|safe }},
+                    datasets: [{
+                        label: 'Servis Sayısı',
+                        data: {{ daily_service_data_json|safe }},
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderColor: 'rgba(99, 102, 241, 1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // En Çok Kullanılan Parçalar Grafiği
+        const topPartsCtx = document.getElementById('topPartsChart');
+        if (topPartsCtx) {
+            new Chart(topPartsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ top_parts_labels_json|safe }},
+                    datasets: [{
+                        data: {{ top_parts_data_json|safe }},
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(139, 92, 246, 0.8)'
+                        ],
+                        borderWidth: 0,
+                        cutout: '60%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Günlük Satış Cirosu Grafiği
+        const dailySalesCtx = document.getElementById('dailySalesChart');
+        if (dailySalesCtx) {
+            new Chart(dailySalesCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ daily_sales_labels_json|safe }},
+                    datasets: [{
+                        label: 'Günlük Ciro (₺)',
+                        data: {{ daily_sales_data_json|safe }},
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return '₺' + value.toLocaleString('tr-TR');
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        // En Çok Satan Ürünler Grafiği
+        const topProductsCtx = document.getElementById('topProductsChart');
+        if (topProductsCtx) {
+            new Chart(topProductsCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ top_products_labels_json|safe }},
+                    datasets: [{
+                        label: 'Satış Adedi',
+                        data: {{ top_products_quantities_json|safe }},
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(139, 92, 246, 0.8)'
+                        ],
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+    });
+</script>
+{% endblock extra_js %}

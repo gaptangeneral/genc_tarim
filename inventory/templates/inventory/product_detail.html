@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- SAYFA BAŞLIĞI VE ANA EYLEMLER -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border">
+        <div class="flex flex-col sm:flex-row gap-6 items-center">
+            <!-- Ürün Resmi -->
+            <div class="flex-shrink-0">
+                {% if product.image %}
+                    <img class="h-32 w-32 rounded-lg object-cover shadow-sm border" src="{{ product.image.url }}" alt="{{ product.name }}">
+                {% else %}
+                    <div class="h-32 w-32 rounded-lg bg-gray-50 flex items-center justify-center border">
+                        <i class="fas fa-box-open text-4xl text-gray-300"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <!-- Ürün Bilgileri ve Butonlar -->
+            <div class="flex-1">
+                <p class="text-sm font-medium text-blue-600">{{ product.category.name|default_if_none:'' }}</p>
+                <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 mt-1">{{ product.name }}</h1>
+                <p class="text-sm text-gray-500 mt-2">{{ product.brand.name|default_if_none:'' }}</p>
+                
+                <div class="mt-5 flex items-center gap-x-3">
+                    <a href="{% url 'inventory:product_update' slug=product.slug %}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md flex items-center">
+                        <i class="fas fa-pencil-alt mr-2"></i>Düzenle
+                    </a>
+                    <button id="open-modal-btn" type="button" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center">
+                        Stok Hareketi Ekle
+                    </button>
+                    <a href="{% url 'inventory:product_delete' slug=product.slug %}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-red-50 text-red-600 hover:bg-red-100 flex items-center">
+                        <i class="fas fa-trash-alt mr-2"></i>Sil
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- SOL TARAF -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Etiket Önizleme Kartı -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border">
+                <h3 class="text-lg font-semibold text-gray-900 border-b pb-3 mb-4">Etiket Önizleme</h3>
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-6">
+                    <div class="p-2 border-2 border-dashed border-gray-300">
+                        <div class="w-[215px] h-[151px] p-2 bg-white flex flex-col justify-between">
+                            <p class="text-black text-sm font-bold truncate">{{ product.name }}</p>
+                            <div class="w-full flex justify-center my-1">
+                                {% if product.barcode_image %}
+                                    <img src="{{ product.barcode_image.url}}" alt="Barkod" class="h-16 object-contain">
+                                {% else %}
+                                    <p class="text-xs text-red-500">Barkod verisi yok</p>
+                                {% endif %}
+                            </div>
+                            <p class="text-black text-lg font-bold text-right">₺{{ product.selling_price|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'inventory:product_label_print' slug=product.slug %}" target="_blank" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gray-700 text-white hover:bg-gray-800 flex items-center justify-center w-fit mx-auto">
+                        <i class="fas fa-print mr-2"></i>Yazdır
+                    </a>
+                </div>
+            </div>
+
+            <!-- Son Stok Hareketleri Kartı -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Son Stok Hareketleri</h3>
+                <div class="space-y-3">
+                    {% for movement in stock_movements %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                            <div class="flex items-center">
+                                {% if 'Alım' in movement.get_movement_type_display or 'Giriş' in movement.get_movement_type_display or 'Fazlası' in movement.get_movement_type_display or 'İade' in movement.get_movement_type_display %}
+                                    <div class="bg-green-100 p-2 rounded-lg mr-4"><i class="fas fa-arrow-down text-green-600"></i></div>
+                                {% else %}
+                                    <div class="bg-red-100 p-2 rounded-lg mr-4"><i class="fas fa-arrow-up text-red-600"></i></div>
+                                {% endif %}
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ movement.get_movement_type_display }}</p>
+                                    <p class="text-xs text-gray-500">{{ movement.timestamp|date:"d M Y, H:i" }}</p>
+                                </div>
+                            </div>
+                            <span class="text-base font-bold {% if 'Alım' in movement.get_movement_type_display or 'Giriş' in movement.get_movement_type_display or 'Fazlası' in movement.get_movement_type_display or 'İade' in movement.get_movement_type_display %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if 'Alım' in movement.get_movement_type_display or 'Giriş' in movement.get_movement_type_display or 'Fazlası' in movement.get_movement_type_display or 'İade' in movement.get_movement_type_display %}+{% else %}-{% endif %}{{ movement.quantity }}
+                            </span>
+                        </div>
+                    {% empty %}
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-exchange-alt text-3xl mb-2"></i>
+                            <p>Bu ürün için henüz stok hareketi yok.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SAĞ TARAF -->
+        <div class="space-y-6">
+            <!-- Stok Durumu Kartı -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border text-center hover:shadow-md transition-shadow duration-200">
+                <div class="bg-blue-100 p-3 rounded-full mx-auto mb-3 w-fit">
+                    <i class="fas fa-boxes text-blue-500 text-xl"></i>
+                </div>
+                <p class="text-gray-500 text-sm font-medium">Mevcut Stok</p>
+                <h4 class="text-4xl font-bold text-gray-900 mt-1">{{ product.stock }}</h4>
+                {% if product.is_low_stock and product.stock > 0 %}
+                    <span class="mt-2 inline-block px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">Düşük Stok</span>
+                {% elif product.stock == 0 %}
+                    <span class="mt-2 inline-block px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Tükendi</span>
+                {% else %}
+                    <span class="mt-2 inline-block px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Yeterli</span>
+                {% endif %}
+            </div>
+
+            <!-- KONUM BİLGİSİ KARTI -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border text-center hover:shadow-md transition-shadow duration-200">
+                <div class="bg-indigo-100 p-3 rounded-full mx-auto mb-3 w-fit">
+                    <i class="fas fa-warehouse text-indigo-500 text-xl"></i>
+                </div>
+                <p class="text-gray-500 text-sm font-medium">Konum</p>
+                <h4 class="text-xl font-bold text-gray-900 mt-1">
+                    {% if product.shelf %}
+                        {{ product.shelf.warehouse.name }} / {{ product.shelf.code }}
+                    {% else %}
+                        <span class="text-gray-400">Belirtilmemiş</span>
+                    {% endif %}
+                </h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stok Hareketi Ekleme Modalı -->
+<div id="stock-movement-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg">
+        <div class="flex justify-between items-center border-b pb-3 mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">Stok Hareketi Ekle</h3>
+            <button id="close-modal-btn" class="text-gray-400 hover:text-gray-700 transition-colors">&times;</button>
+        </div>
+        <form method="post" action="{% url 'inventory:add_stock_movement' product.pk %}">
+            {% csrf_token %}
+            <div class="space-y-4">
+                {% if stock_movement_form %}
+                    {{ stock_movement_form.as_p }}
+                {% else %}
+                    <p class="text-red-500">Stok hareket formu yüklenemedi.</p>
+                {% endif %}
+            </div>
+            <div class="mt-8 flex justify-end gap-3">
+                <button type="button" id="cancel-modal-btn" class="px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200">İptal</button>
+                <button type="submit" class="px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md">Hareketi Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('stock-movement-modal');
+    if (modal) {
+        const openBtn = document.getElementById('open-modal-btn');
+        const closeBtn = document.getElementById('close-modal-btn');
+        const cancelBtn = document.getElementById('cancel-modal-btn');
+
+        const openModal = () => {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        const closeModal = () => {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        if (openBtn) openBtn.addEventListener('click', openModal);
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+        
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Bu kısım, view'dan gelen formun dinamik alanları için gereklidir.
+        const movementTypeSelect = document.querySelector('#stock-movement-modal select[name="movement_type"]');
+        const customerContainer = document.getElementById('customer-field-container'); // Bu ID'nin formda olduğundan emin olun
+
+        if(movementTypeSelect && customerContainer) {
+            function toggleCustomerField() {
+                if (movementTypeSelect.value === 'SALE') { // 'SALE' değeri modeldeki 'choices' ile eşleşmeli
+                    customerContainer.classList.remove('hidden');
+                } else {
+                    customerContainer.classList.add('hidden');
+                }
+            }
+            movementTypeSelect.addEventListener('change', toggleCustomerField);
+            toggleCustomerField(); // Sayfa yüklendiğinde de kontrol et
+        }
+    }
+});
+</script>
+{% endblock %}

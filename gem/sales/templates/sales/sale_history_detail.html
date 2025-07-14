@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Satış Detayı #{{ sale.id }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-2">Satış Detayı <span class="text-indigo-600">#{{ sale.id }}</span></h1>
+    <p class="text-gray-500 mb-6">Tarih: {{ sale.created_at|date:"d F Y, H:i" }}</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Satılan Ürünler</h2>
+            <div class="space-y-4">
+                {% for item in sale.items.all %}
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-medium">{{ item.product.name }}</p>
+                        <p class="text-sm text-gray-600">{{ item.quantity }} adet x ₺{{ item.unit_price|floatformat:2 }} (KDV %{{ item.vat_rate|floatformat:0 }})</p>
+                    </div>
+                    <p class="font-semibold text-lg">₺{{ item.get_total_price|floatformat:2 }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mt-6 border-t-2 pt-4 space-y-2 text-right">
+                <p class="text-gray-600">Ara Toplam: <span class="font-bold text-lg text-gray-800">₺{{ sale.subtotal|floatformat:2 }}</span></p>
+                <p class="text-gray-600">KDV Toplamı: <span class="font-bold text-lg text-gray-800">₺{{ sale.vat_total|floatformat:2 }}</span></p>
+                <p class="text-gray-800 text-2xl font-bold">Genel Toplam: <span class="text-indigo-600">₺{{ sale.grand_total|floatformat:2 }}</span></p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Müşteri Bilgileri</h2>
+            <p><strong>Müşteri:</strong> {{ sale.customer }}</p>
+            <p><strong>Telefon:</strong> {{ sale.customer.phone|default:"Belirtilmemiş" }}</p>
+            <p><strong>E-posta:</strong> {{ sale.customer.email|default:"Belirtilmemiş" }}</p>
+            
+            <h2 class="text-xl font-semibold mb-4 mt-6 border-b pb-2">İşlem Bilgileri</h2>
+            <p><strong>Personel:</strong> {{ sale.salesperson.get_full_name }}</p>
+            <p><strong>Ödeme Yöntemi:</strong> {{ sale.get_payment_method_display|default:"Belirtilmemiş" }}</p>
+
+            <div class="mt-8 space-y-3">
+                <a href="{% url 'sales:sale_receipt' sale.id %}" target="_blank" class="btn btn-secondary w-full text-center">Fişi Yazdır</a>
+                <a href="{% url 'sales:sale_invoice' sale.id %}" target="_blank" class="btn btn-primary w-full text-center">Faturayı Yazdır</a>
+                </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

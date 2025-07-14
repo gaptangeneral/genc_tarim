@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="bg-white rounded-xl shadow overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-900">{{ page_title }}</h3>
+        {% if perms.inventory.add_category %}
+        <a href="{% url 'inventory:category_add' %}" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg text-sm">Yeni Kategori Ekle</a>
+        {% endif %}
+    </div>
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kategori Adı</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İşlemler</th></tr></thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for category in categories %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ category }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{% if category.is_active %}<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Aktif</span>{% else %}<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Pasif</span>{% endif %}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">{% if perms.inventory.change_category %}<a href="{% url 'inventory:category_update' pk=category.pk %}" class="text-primary hover:text-dark">Düzenle</a>{% endif %}</td>
+            </tr>
+            {% empty %}<tr><td colspan="3" class="text-center py-10 text-gray-500">Kategori bulunamadı.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
