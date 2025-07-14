@@ -1,0 +1,100 @@
+<!-- templates/service/service_invoice.html -->
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Servis Fişi</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            @page {
+                size: A5 portrait;
+                margin: 10mm;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-white p-6 text-sm text-gray-900">
+    <div class="max-w-screen-sm mx-auto">
+        <div class="text-center mb-4">
+            <h1 class="text-xl font-bold">GENÇ TARIM SERVİS FİŞİ</h1>
+            <p class="text-xs text-gray-600">Tarih: {{ record.created_at|date:"d.m.Y H:i" }}</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+                <h2 class="font-semibold">Müşteri Bilgileri</h2>
+                <p>{{ record.customer }}</p>
+                <p>{{ record.customer.phone_number }}</p>
+            </div>
+            <div>
+                <h2 class="font-semibold">Makine Bilgileri</h2>
+                <p>Marka: {{ record.machine_brand }}</p>
+                <p>Model: {{ record.machine_model }}</p>
+                <p>Seri No: {{ record.serial_number|default:"-" }}</p>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <h2 class="font-semibold">Müşteri Şikayeti</h2>
+            <p class="whitespace-pre-wrap">{{ record.customer_complaint }}</p>
+        </div>
+
+        <div class="mb-4">
+            <h2 class="font-semibold">Kullanılan Parçalar</h2>
+            <table class="w-full text-left border border-gray-300 mt-2 text-sm">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="p-1 border">Parça</th>
+                        <th class="p-1 border">Adet</th>
+                        <th class="p-1 border">Fiyat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for part_used in record.parts_used.all %}
+                    <tr>
+                        <td class="p-1 border">{{ part_used.part.name }}</td>
+                        <td class="p-1 border">{{ part_used.quantity }}</td>
+                        <td class="p-1 border">₺{{ part_used.price_at_time_of_use|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center p-2 text-gray-500">Parça kullanılmadı.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4">
+            <p>İşçilik Ücreti: <strong>₺{{ record.labor_cost|floatformat:2 }}</strong></p>
+        </div>
+
+        <div class="border-t pt-2 mt-2 text-right font-semibold">
+     <div class="space-y-1">
+        <p>Ara Toplam: <strong class="font-normal">₺{{ subtotal|floatformat:2 }}</strong></p>
+        <p>Hesaplanan KDV (%{{ record.kdv_rate|floatformat:2 }}): <strong class="font-normal">₺{{ kdv_amount|floatformat:2 }}</strong></p>
+    </div>
+    <div class="mt-2 pt-2 border-t">
+        <p class="text-xl font-bold">TOPLAM: <strong>₺{{ grand_total|floatformat:2 }}</strong></p>
+    </div>
+</div>
+
+        <div class="mt-8 flex justify-between text-xs">
+            <div>
+                <p>Yetkili İmza: _____________________</p>
+            </div>
+            <div>
+                <p>Müşteri İmzası: _____________________</p>
+            </div>
+        </div>
+
+        <div class="no-print text-center mt-6">
+            <button onclick="window.print()" class="bg-black text-white px-4 py-2 rounded">Yazdır</button>
+        </div>
+    </div>
+</body>
+</html>

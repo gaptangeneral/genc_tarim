@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 from django.db.models import F
-from .models import Category, Brand, Supplier, Product, StockMovement
+from .models import Category, Brand, Supplier, Product, StockMovement,Warehouse,Shelf 
 
 # --- KATEGORİ, MARKA, TEDARİKÇİ ADMİN ---
 
@@ -114,3 +114,15 @@ class StockMovementAdmin(admin.ModelAdmin):
         return obj.user.get_full_name() or obj.user.username if obj.user else "-"
     user_display.short_description = 'İşlemi Yapan'
     user_display.admin_order_field = 'user'
+    
+    
+@admin.register(Warehouse)
+class WarehouseAdmin(admin.ModelAdmin):
+    list_display = ('name', 'location')
+    search_fields = ('name',)
+
+@admin.register(Shelf)
+class ShelfAdmin(admin.ModelAdmin):
+    list_display = ('code', 'warehouse')
+    list_filter = ('warehouse',)
+    search_fields = ('code',)

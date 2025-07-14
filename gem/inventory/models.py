@@ -11,6 +11,8 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.urls import reverse
 
+
+
 class ActiveProductManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(is_active=True)
@@ -56,6 +58,34 @@ class Supplier(models.Model):
         verbose_name = "Tedarikçi"; verbose_name_plural = "Tedarikçiler"; ordering = ['name']
     def __str__(self): return self.name
 
+class Warehouse(models.Model):
+    name = models.CharField(max_length=100, unique=True, verbose_name="Depo Adı")
+    location = models.CharField(max_length=255, blank=True, null=True, verbose_name="Konum/Açıklama")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Depo"
+        verbose_name_plural = "Depolar"
+        ordering = ['name']
+
+
+class Shelf(models.Model):
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='shelves', verbose_name="Ait Olduğu Depo")
+    code = models.CharField(max_length=50, verbose_name="Raf Kodu/Numarası")
+    # `unique_together` bir depoda aynı koda sahip birden fazla raf olmasını engeller.
+    
+    def __str__(self):
+        return f"{self.warehouse.name} - {self.code}"
+
+    class Meta:
+        verbose_name = "Raf"
+        verbose_name_plural = "Raflar"
+        unique_together = ('warehouse', 'code')
+        ordering = ['warehouse', 'code']
+        
 class Product(models.Model):
     UNIT_CHOICES = [('adet', 'Adet'), ('takim', 'Takım'), ('metre', 'Metre'), ('kg', 'Kilogram'), ('litre', 'Litre')]
     name = models.CharField(max_length=255, verbose_name="Ürün Adı")
@@ -63,6 +93,8 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Kategori", related_name="products")
     brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Marka", related_name="products")
     supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Tedarikçi", related_name="products")
+    shelf = models.ForeignKey(Shelf, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Raf", related_name="products")
+
     product_code = models.CharField(max_length=100, unique=True, blank=True, null=True, verbose_name="Ürün Kodu (SKU)")
     barcode_data = models.CharField(max_length=100, unique=True, blank=True, null=True, verbose_name="Barkod Verisi")
     barcode_image = models.ImageField(upload_to='barcodes/', blank=True, null=True, verbose_name="Barkod Resmi")
@@ -79,6 +111,7 @@ class Product(models.Model):
     )
     quantity = models.IntegerField(default=0, verbose_name="Mevcut Stok Miktarı")
     min_stock_level = models.PositiveIntegerField(default=5, verbose_name="Minimum Stok Seviyesi")
+    
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='adet', verbose_name="Birim")
     is_active = models.BooleanField(default=True, verbose_name="Aktif mi?")
     created_at = models.DateTimeField(auto_now_add=True)

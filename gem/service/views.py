@@ -1,4 +1,6 @@
 from django.db.models import Q
+from django.db.models import Sum, F, DecimalField
+from django.db.models.functions import Coalesce
 from django.shortcuts import redirect
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
@@ -7,22 +9,59 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.views.generic import ListView, CreateView, DetailView, UpdateView
 from .models import ServiceRecord, ServicePart
 from .forms import (
-    ServiceRecordForm, 
-    ServiceRecordFilterForm, 
-    ServicePartForm, 
+    ServiceRecordForm,
+    ServiceRecordFilterForm,
+    ServicePartForm,
     ServiceStatusUpdateForm
 )
+
+
+class ServiceInvoiceView(DetailView):
+    model = ServiceRecord
+    template_name = "service/service_invoice.html"
+    context_object_name = "record"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        record = self.get_object()
+
+        # Parça toplamını hesapla (adet * fiyat)
+        parts_total_agg = record.parts_used.aggregate(
+            total=Coalesce(
+                Sum(F('quantity') * F('price_at_time_of_use'), output_field=DecimalField()),
+                0.0,
+                output_field=DecimalField()
+            )
+        )
+        parts_total = parts_total_agg['total']
+        labor_cost = record.labor_cost or 0
+        kdv_rate = record.kdv_rate or 0
+
+        # YENİ HESAPLAMA MANTIĞI
+        subtotal = parts_total + labor_cost  # Ara Toplam
+        kdv_amount = subtotal * (kdv_rate / 100)  # KDV Tutarı
+        grand_total = subtotal + kdv_amount  # Genel Toplam
+
+        # Hesaplanan değerleri context'e ekle
+        context['parts_total'] = parts_total
+        context['subtotal'] = subtotal
+        context['kdv_amount'] = kdv_amount
+        context['grand_total'] = grand_total
+        return context
+
 
 class ServiceRecordListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ServiceRecord
     template_name = 'service/servicerecord_list.html'
-    context_object_name = 'service_records' # Bu, alttaki "Tüm Servisler" listesini dolduracak
+    # Bu, alttaki "Tüm Servisler" listesini dolduracak
+    context_object_name = 'service_records'
     paginate_by = 20
     permission_required = 'service.view_servicerecord'
 
     def get_queryset(self):
         # Bu ana sorgu, filtrelenmiş veya tüm servis kayıtlarını getirir
-        queryset = super().get_queryset().select_related('customer', 'assigned_to').order_by('-created_at')
+        queryset = super().get_queryset().select_related(
+            'customer', 'assigned_to').order_by('-created_at')
         form = ServiceRecordFilterForm(self.request.GET)
         if form.is_valid():
             query = form.cleaned_data.get('query')
@@ -30,7 +69,8 @@ class ServiceRecordListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
             if query:
                 queryset = queryset.filter(
                     Q(customer__first_name__icontains=query) | Q(customer__last_name__icontains=query) |
-                    Q(machine_model__icontains=query) | Q(service_id__icontains=query)
+                    Q(machine_model__icontains=query) | Q(
+                        service_id__icontains=query)
                 )
             if status:
                 queryset = queryset.filter(status=status)
@@ -40,7 +80,7 @@ class ServiceRecordListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
         context = super().get_context_data(**kwargs)
         context['page_title'] = "Servis Yönetimi"
         context['filter_form'] = ServiceRecordFilterForm(self.request.GET)
-        
+
         # "Bana Atanan İşler" bölümü için veriyi burada hazırlıyoruz.
         # Bu context değişkeni, şablondaki ilk tabloyu dolduracak.
         context['assigned_to_me_records'] = ServiceRecord.objects.filter(
@@ -48,7 +88,7 @@ class ServiceRecordListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
         ).exclude(
             status__in=['DELIVERED', 'CANCELLED']
         ).select_related('customer').order_by('created_at')
-        
+
         return context
 
     def get_context_data(self, **kwargs):
@@ -62,10 +102,12 @@ class ServiceRecordListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
             context['assigned_to_me_records'] = ServiceRecord.objects.filter(
                 assigned_to=self.request.user
             ).exclude(
-                status__in=['DELIVERED', 'CANCELLED'] # Tamamlanmış ve iptalleri gösterme
+                # Tamamlanmış ve iptalleri gösterme
+                status__in=['DELIVERED', 'CANCELLED']
             ).select_related('customer').order_by('created_at')
-        
+
         return context
+
 
 class ServiceRecordCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
     model = ServiceRecord
@@ -79,6 +121,7 @@ class ServiceRecordCreateView(LoginRequiredMixin, PermissionRequiredMixin, Succe
         context = super().get_context_data(**kwargs)
         context['page_title'] = "Yeni Servis Kabul Formu"
         return context
+
 
 class ServiceRecordDetailView(LoginRequiredMixin, DetailView):
     model = ServiceRecord
@@ -101,25 +144,19 @@ class ServiceRecordDetailView(LoginRequiredMixin, DetailView):
         labor_cost = record.labor_cost or 0
         kdv_rate = record.kdv_rate or 0
 
-        # Hesaplama mantığı
-        subtotal = parts_total + labor_cost
-        kdv_amount = subtotal * (kdv_rate / 100)
-        grand_total = subtotal + kdv_amount
+        # YENİ HESAPLAMA MANTIĞI
+        subtotal = parts_total + labor_cost  # Ara Toplam
+        kdv_amount = subtotal * (kdv_rate / 100)  # KDV Tutarı
+        grand_total = subtotal + kdv_amount  # Genel Toplam
 
         context['page_title'] = f"Servis Detayı #{str(self.object.service_id)[:8]}"
         context['part_form'] = ServicePartForm()
         
-        # Hesaplanan yeni değerleri context'e ekle
+        # HESAPLANAN YENİ DEĞERLERİ CONTEXT'E EKLE
         context['parts_total'] = parts_total
         context['subtotal'] = subtotal
         context['kdv_amount'] = kdv_amount
         context['grand_total'] = grand_total
-        
-        # === YENİ EKLENEN KISIM ===
-        # Modal penceresindeki select kutularını doldurmak için
-        context['all_categories'] = Category.objects.all()
-        context['all_brands'] = Brand.objects.all()
-        # === YENİ EKLENEN KISIM SONU ===
         
         return context
 
@@ -140,7 +177,7 @@ class ServiceRecordDetailView(LoginRequiredMixin, DetailView):
                 messages.error(request, "Lütfen geçerli bir sayı formatı giriniz.")
             return redirect('service:servicerecord_detail', pk=record.pk)
 
-        # Parça ekleme işlemi
+        # Parça ekleme işlemi (Bu kısım aynı kalıyor)
         form = ServicePartForm(request.POST)
         if form.is_valid():
             part_instance = form.save(commit=False)
@@ -150,6 +187,9 @@ class ServiceRecordDetailView(LoginRequiredMixin, DetailView):
         else:
             messages.error(request, "Parça eklenirken bir hata oluştu.")
         return redirect('service:servicerecord_detail', pk=record.pk)
+
+
+
 class ServiceRecordUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
     model = ServiceRecord
     form_class = ServiceRecordForm
@@ -164,6 +204,7 @@ class ServiceRecordUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Succe
 
     def get_success_url(self):
         return reverse('service:servicerecord_detail', kwargs={'pk': self.object.pk})
+
 
 class ServiceRecordStatusUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
     model = ServiceRecord
@@ -180,10 +221,11 @@ class ServiceRecordStatusUpdateView(LoginRequiredMixin, PermissionRequiredMixin,
     def get_success_url(self):
         return reverse('service:servicerecord_detail', kwargs={'pk': self.object.pk})
 
+
 class TechnicianDashboardView(LoginRequiredMixin, ListView):
     model = ServiceRecord
     # KULLANILACAK ŞABLON: Sadece bu view için özel, temiz bir şablon.
-    template_name = 'service/technician_dashboard.html' 
+    template_name = 'service/technician_dashboard.html'
     context_object_name = 'assigned_records'
 
     def get_queryset(self):
@@ -200,6 +242,7 @@ class TechnicianDashboardView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = "Bana Atanan Aktif İşler"
         return context
+
 
 class ServiceLabelPrintView(LoginRequiredMixin, DetailView):
     model = ServiceRecord

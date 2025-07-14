@@ -80,15 +80,14 @@
             {% endif %}
         </div>
 
-        <div class="footer-content">
-            <div class="model-no">
-                {{ product.model_compatibility|default:"Model Belirtilmemiş" }}
-            </div>
-            <div class="company-name">
-                Genç Tarım
-            </div>
-        </div>
-
+       <div class="footer-content">
+    <div class="model-no">
+        {{ product.name|default:"Ürün Adı Belirtilmemiş" }}
+    </div>
+    <div class="company-name">
+        Genç Tarım
+    </div>
+</div>
     </div>
     
 </body>

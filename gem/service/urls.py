@@ -9,6 +9,7 @@ from .views import (
     ServiceRecordUpdateView,
     ServiceRecordStatusUpdateView,
     TechnicianDashboardView, 
+    ServiceInvoiceView
 )
 
 app_name = 'service'
@@ -20,8 +21,7 @@ urlpatterns = [
     path('<int:pk>/edit/', ServiceRecordUpdateView.as_view(), name='servicerecord_update'),
     path('<int:pk>/update-status/', ServiceRecordStatusUpdateView.as_view(), name='servicerecord_update_status'),
     path('<int:pk>/print-label/', ServiceLabelPrintView.as_view(), name='service_label_print'),
-
-    
+    path('service-invoice/<int:pk>/', ServiceInvoiceView.as_view(), name='service_invoice'),
     # Hatanın kaynaklandığı URL'in doğru tanımı.
     # Bu satırın varlığından ve ismin doğru yazıldığından emin olun.
     path('my-tasks/', TechnicianDashboardView.as_view(), name='technician_dashboard'),

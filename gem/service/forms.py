@@ -12,7 +12,7 @@ class ServiceRecordForm(forms.ModelForm):
         fields = [
             'customer', 'assigned_to', 'status',
             'machine_brand', 'machine_model', 'serial_number',
-            'customer_complaint', 'technician_notes', 'labor_cost'
+            'customer_complaint', 'technician_notes', 'labor_cost','kdv_rate'
         ]
         widgets = {
             'customer': Select2Widget,

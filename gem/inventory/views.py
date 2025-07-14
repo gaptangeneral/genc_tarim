@@ -17,6 +17,8 @@ from django.views.decorators.http import require_POST
 # Kendi uygulamamızdan modelleri ve formları import ediyoruz
 from .models import Product, StockMovement, Category, Brand, Supplier
 from .forms import CategoryForm, ProductSearchForm, ProductForm, QuickProductForm, StockMovementForm
+from .forms import WarehouseForm, ShelfForm # Yeni formları import edin
+from .models import Warehouse # Warehouse modelini import edin
 
 # === GENEL AMAÇLI VIEW'LAR ===
 
@@ -48,16 +50,15 @@ class ProductListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = Product.active_objects.select_related('category', 'brand').order_by('-created_at')
         query = self.request.GET.get('query')
-        category = self.request.GET.get('category')
-        brand = self.request.GET.get('brand')
-        if query:
-            queryset = queryset.filter(
-                Q(name__icontains=query) | Q(product_code__icontains=query) | Q(barcode_data__icontains=query)
-            )
+        form = ProductSearchForm(self.request.GET)
+        if form.is_valid():
+            category = form.cleaned_data.get('category')
+            brand = form.cleaned_data.get('brand')
+            query = form.cleaned_data.get('search_query') 
         if category:
-            queryset = queryset.filter(category__slug=category)
+            queryset = queryset.filter(category=category)
         if brand:
-            queryset = queryset.filter(brand__slug=brand)
+            queryset = queryset.filter(brand=brand)
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -161,6 +162,8 @@ class ProductDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView)
     def form_valid(self, form):
         messages.success(self.request, f'"{self.object.name}" adlı ürün başarıyla silindi.')
         return super().form_valid(form)
+    
+
 
 # === KATEGORİ CRUD VIEW'LARI ===
 
@@ -254,3 +257,65 @@ def add_supplier_ajax(request):
         if created:
             return JsonResponse({'id': supplier.id, 'name': supplier.name})
     return JsonResponse({'error': 'İsim boş olamaz veya bu tedarikçi zaten mevcut.'}, status=400)
+
+
+@login_required
+@require_POST
+def add_warehouse_ajax(request):
+    form = WarehouseForm(request.POST)
+    if form.is_valid():
+        warehouse = form.save()
+        return JsonResponse({'status': 'success', 'id': warehouse.id, 'name': warehouse.name})
+    else:
+        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+
+
+@login_required
+@require_POST
+def add_shelf_ajax(request):
+    form = ShelfForm(request.POST)
+    if form.is_valid():
+        shelf = form.save()
+        # __str__ metodunu kullanarak tam adı alıyoruz (Depo Adı - Raf Kodu)
+        shelf_full_name = str(shelf)
+        return JsonResponse({'status': 'success', 'id': shelf.id, 'name': shelf_full_name})
+    else:
+        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+
+
+# Bu view, depoya göre raf listesini dinamik olarak getirmek için de kullanılabilir
+# ama şimdilik sadece tüm depoları modal'a yollamak için kullanabiliriz.
+@login_required
+def get_warehouses_ajax(request):
+    warehouses = Warehouse.objects.all().values('id', 'name')
+    return JsonResponse(list(warehouses), safe=False)
+
+@login_required
+def add_stock_movement(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if request.method == 'POST':
+        form = StockMovementForm(request.POST)
+        if form.is_valid():
+            movement = form.save(commit=False)
+            movement.product = product
+            movement.save()
+            messages.success(request, "Stok hareketi başarıyla eklendi.")
+        else:
+            error_message = f"Formda hatalar var: {form.errors.as_text()}"
+            messages.error(request, error_message)
+    return redirect('inventory:product_detail', slug=product.slug)
+
+
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+
+@login_required
+def ajax_product_search(request):
+    query = request.GET.get("query", "")
+    products = Product.active_objects.filter(
+        Q(name__icontains=query) | Q(product_code__icontains=query) | Q(barcode_data__icontains=query)
+    ).select_related("category", "brand").order_by("-created_at")[:50]  # opsiyonel sınırlama
+
+    html = render_to_string("inventory/partials/product_table_rows.html", {"products": products})
+    return HttpResponse(html)
+

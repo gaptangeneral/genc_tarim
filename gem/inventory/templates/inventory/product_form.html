@@ -1,157 +1,395 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="bg-white p-8 rounded-xl shadow max-w-4xl mx-auto">
+<div class="bg-white p-6 rounded-xl shadow-sm border">
     <h1 class="text-xl font-semibold text-gray-900 mb-6">{{ page_title }}</h1>
 
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             
+            <!-- Ürün Adı -->
             <div class="md:col-span-2">
-                <label for="{{ form.name.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Ürün Adı</label>
+                <label for="{{ form.name.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.name.label }}</label>
                 {{ form.name }}
+                {% if form.name.errors %}<div class="text-red-500 text-sm mt-1">{{ form.name.errors }}</div>{% endif %}
             </div>
 
+            <!-- Kategori -->
             <div>
-                <label for="{{ form.category.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Kategori</label>
+                <label for="{{ form.category.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.category.label }}</label>
                 <div class="flex items-center gap-x-2">
                     {{ form.category }}
-                    <button type="button" class="quick-add-btn flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg w-9 h-9 flex items-center justify-center" data-field="category" data-url="{% url 'inventory:add_category_ajax' %}" data-title="Yeni Kategori Ekle">
+                    <button type="button" class="quick-add-btn flex-shrink-0 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg w-10 h-10 flex items-center justify-center transition-colors duration-200" data-field="category" data-url="{% url 'inventory:add_category_ajax' %}" data-title="Yeni Kategori Ekle">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
             </div>
 
+            <!-- Marka -->
             <div>
-                <label for="{{ form.brand.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Marka</label>
+                <label for="{{ form.brand.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.brand.label }}</label>
                 <div class="flex items-center gap-x-2">
                     {{ form.brand }}
-                    <button type="button" class="quick-add-btn flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg w-9 h-9 flex items-center justify-center" data-field="brand" data-url="{% url 'inventory:add_brand_ajax' %}" data-title="Yeni Marka Ekle">
+                    <button type="button" class="quick-add-btn flex-shrink-0 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg w-10 h-10 flex items-center justify-center transition-colors duration-200" data-field="brand" data-url="{% url 'inventory:add_brand_ajax' %}" data-title="Yeni Marka Ekle">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
             </div>
 
+            <!-- Tedarikçi -->
             <div>
-                <label for="{{ form.supplier.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Tedarikçi</label>
+                <label for="{{ form.supplier.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.supplier.label }}</label>
                 <div class="flex items-center gap-x-2">
                     {{ form.supplier }}
-                    <button type="button" class="quick-add-btn flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg w-9 h-9 flex items-center justify-center" data-field="supplier" data-url="{% url 'inventory:add_supplier_ajax' %}" data-title="Yeni Tedarikçi Ekle">
+                    <button type="button" class="quick-add-btn flex-shrink-0 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg w-10 h-10 flex items-center justify-center transition-colors duration-200" data-field="supplier" data-url="{% url 'inventory:add_supplier_ajax' %}" data-title="Yeni Tedarikçi Ekle">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Raf (Depo/Konum) -->
+            <div>
+                <label for="{{ form.shelf.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.shelf.label }}</label>
+                <div class="flex items-center gap-x-2">
+                    {{ form.shelf }}
+                    <button type="button" id="add-location-btn" class="flex-shrink-0 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg w-10 h-10 flex items-center justify-center transition-colors duration-200">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
             </div>
 
-            <div><label for="{{ form.barcode_data.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Barkod Numarası</label>{{ form.barcode_data }}</div>
-            <div><label for="{{ form.purchase_price.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Alış Fiyatı (₺)</label>{{ form.purchase_price }}</div>
-            <div><label for="{{ form.selling_price.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Satış Fiyatı (₺)</label>{{ form.selling_price }}</div>
-             <div>
-                <label for="{{ form.initial_stock.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Başlangıç Stok Miktarı</label>
+            <!-- Barkod -->
+            <div>
+                <label for="{{ form.barcode_data.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.barcode_data.label }}</label>
+                {{ form.barcode_data }}
+            </div>
+
+            <!-- Başlangıç Stok (Sadece yeni ürünlerde görünür) -->
+            {% if form.initial_stock %}
+            <div>
+                <label for="{{ form.initial_stock.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.initial_stock.label }}</label>
                 {{ form.initial_stock }}
                 {% if form.initial_stock.errors %}<div class="text-red-500 text-sm mt-1">{{ form.initial_stock.errors }}</div>{% endif %}
                 <p class="text-xs text-gray-500 mt-1">{{ form.initial_stock.help_text }}</p>
             </div>
-            <div><label for="{{ form.min_stock_level.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Minimum Stok Seviyesi</label>{{ form.min_stock_level }}</div>
-            <div><label for="{{ form.image.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Ürün Resmi</label>{{ form.image }}</div>
-            <div class="md:col-span-2 flex items-center pt-2 gap-x-3">{{ form.is_active }}<div><label for="{{ form.is_active.id_for_label }}" class="font-medium text-gray-900">Ürün Aktif</label><p class="text-gray-500 text-sm">Pasif ürünler listede ve satışta görünmez.</p></div></div>
+            {% endif %}
+
+            <!-- Alış Fiyatı -->
+            <div>
+                <label for="{{ form.purchase_price.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.purchase_price.label }}</label>
+                {{ form.purchase_price }}
+            </div>
+
+            <!-- Satış Fiyatı -->
+            <div>
+                <label for="{{ form.selling_price.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.selling_price.label }}</label>
+                {{ form.selling_price }}
+            </div>
+
+            <!-- Minimum Stok Seviyesi -->
+            <div>
+                <label for="{{ form.min_stock_level.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.min_stock_level.label }}</label>
+                {{ form.min_stock_level }}
+            </div>
+
+            <!-- Ürün Resmi -->
+            <div class="md:col-span-2">
+                <label for="{{ form.image.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.image.label }}</label>
+                {{ form.image }}
+            </div>
+
+             <!-- Açıklama -->
+            <div class="md:col-span-2">
+                <label for="{{ form.description.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.description.label }}</label>
+                {{ form.description }}
+            </div>
+
+            <!-- Aktiflik Durumu -->
+            <div class="md:col-span-2 flex items-center pt-2 gap-x-3">
+                {{ form.is_active }}
+                <div>
+                    <label for="{{ form.is_active.id_for_label }}" class="font-medium text-gray-900">{{ form.is_active.label }}</label>
+                    <p class="text-gray-500 text-sm">Pasif ürünler listede ve satışta görünmez.</p>
+                </div>
+            </div>
         </div>
 
-        <div class="mt-8 flex justify-end gap-2">
-            <a href="{% url 'inventory:product_list' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition-all">İptal</a>
-            <button type="submit" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-all flex items-center">Kaydet</button>
+        <!-- Kaydet / İptal Butonları -->
+        <div class="mt-8 flex justify-end gap-3">
+            <a href="{% url 'inventory:product_list' %}" class="px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200">İptal</a>
+            <button type="submit" class="px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md">Kaydet</button>
         </div>
     </form>
 </div>
 
-<div id="quick-add-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden flex items-center justify-center">
-    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4">
+<!-- =================================================================== -->
+<!--                      MODAL PENCERELERİ                            -->
+<!-- =================================================================== -->
+
+<!-- GENEL HIZLI EKLEME MODALI (Kategori, Marka, Tedarikçi vb. için) -->
+<div id="quick-add-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
         <h3 id="modal-title" class="text-lg font-semibold text-gray-900 mb-4"></h3>
-        <form id="quick-add-form">
+        <form id="quick-add-form" novalidate>
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
             <div>
                 <label for="modal-name-input" class="block text-sm font-medium text-gray-700">İsim</label>
                 <input type="text" id="modal-name-input" name="name" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <p id="modal-error" class="text-red-500 text-sm mt-1"></p>
             </div>
-            <div class="mt-6 flex justify-end gap-2">
-                <button type="button" id="modal-cancel-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition-all">İptal</button>
-                <button type="submit" id="modal-save-btn" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg transition-all">Kaydet</button>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" id="modal-cancel-btn" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200">İptal</button>
+                <button type="submit" id="modal-save-btn" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700">Kaydet</button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- YENİ DEPO/RAF EKLEME MODALI -->
+<div id="location-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+        <h3 id="location-modal-title" class="text-lg font-semibold text-gray-900 mb-4">Yeni Raf Ekle</h3>
+        
+        <!-- YENİ RAF EKLEME FORMU -->
+        <form id="add-shelf-form" novalidate>
+            <div class="space-y-4">
+                <div>
+                    <label for="modal-warehouse-select" class="block text-sm font-medium text-gray-700">Ait Olduğu Depo</label>
+                    <select name="warehouse" id="modal-warehouse-select" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                    <p class="text-xs text-gray-500 mt-1">Depo listede yok mu? <a href="#" id="show-add-warehouse-link" class="text-blue-600 hover:underline">Yeni bir depo ekleyin.</a></p>
+                </div>
+                <div>
+                    <label for="modal-shelf-code-input" class="block text-sm font-medium text-gray-700">Raf Kodu</label>
+                    <input type="text" name="code" id="modal-shelf-code-input" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Örn: A-01">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" class="location-modal-cancel-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200">İptal</button>
+                <button type="submit" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700">Rafı Kaydet</button>
+            </div>
+        </form>
+
+        <!-- YENİ DEPO EKLEME FORMU (BAŞLANGIÇTA GİZLİ) -->
+        <form id="add-warehouse-form" class="hidden" novalidate>
+            <div class="space-y-4">
+                 <div>
+                    <label for="modal-warehouse-name-input" class="block text-sm font-medium text-gray-700">Yeni Depo Adı</label>
+                    <input type="text" name="name" id="modal-warehouse-name-input" required class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Örn: Ana Depo">
+                </div>
+                <div>
+                    <label for="modal-warehouse-location-input" class="block text-sm font-medium text-gray-700">Konum/Açıklama (İsteğe Bağlı)</label>
+                    <input type="text" name="location" id="modal-warehouse-location-input" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" id="back-to-shelf-form-btn" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200">Geri</button>
+                <button type="submit" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-green-600 text-white hover:bg-green-700">Depoyu Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}
+
+
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const modal = document.getElementById('quick-add-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalForm = document.getElementById('quick-add-form');
-    const modalNameInput = document.getElementById('modal-name-input');
-    const modalError = document.getElementById('modal-error');
-    const modalCancelBtn = document.getElementById('modal-cancel-btn');
-    const modalSaveBtn = document.getElementById('modal-save-btn');
-    
-    let targetSelectElement; // Hangi select kutusunu güncelleyeceğimizi tutar
-    let ajaxUrl;
+    // CSRF Token'ı al
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    document.querySelectorAll('.quick-add-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const fieldName = e.currentTarget.dataset.field;
-            ajaxUrl = e.currentTarget.dataset.url;
-            modalTitle.textContent = e.currentTarget.dataset.title;
-            targetSelectElement = document.getElementById(`id_${fieldName}`);
-            modal.classList.remove('hidden');
-            modalNameInput.focus();
-        });
-    });
-
-    const closeModal = () => {
-        modal.classList.add('hidden');
-        modalNameInput.value = '';
-        modalError.textContent = '';
-    };
-
-    modalCancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeModal();
+    // Select2'leri başlatmak için helper fonksiyon
+    const initSelect2 = (element) => {
+        if ($.fn.select2) {
+            $(element).select2({
+                theme: 'bootstrap-5',
+                width: '100%'
+            });
         }
-    });
+    };
+    document.querySelectorAll('.select2').forEach(select => initSelect2(select));
 
-    modalForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        modalSaveBtn.disabled = true;
-        modalError.textContent = '';
+    // ===================================================================
+    //         GENEL HIZLI EKLEME MODALI (Kategori, Marka vb.)
+    // ===================================================================
+    const quickAddModal = document.getElementById('quick-add-modal');
+    if (quickAddModal) {
+        const modalTitle = document.getElementById('modal-title');
+        const quickAddForm = document.getElementById('quick-add-form');
+        const modalNameInput = document.getElementById('modal-name-input');
+        const modalError = document.getElementById('modal-error');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const modalSaveBtn = document.getElementById('modal-save-btn');
         
-        fetch(ajaxUrl, {
-            method: 'POST',
-            body: new FormData(modalForm),
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.id) {
-                // Başarılı: Yeni option oluştur ve seçili yap
-                const newOption = new Option(data.name, data.id, true, true);
-                targetSelectElement.appendChild(newOption);
-                targetSelectElement.dispatchEvent(new Event('change'));
-                closeModal();
-            } else {
-                // Hatalı: Hata mesajını göster
-                modalError.textContent = data.error || 'Bir hata oluştu.';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            modalError.textContent = 'Sunucuyla iletişim kurulamadı.';
-        })
-        .finally(() => {
-            modalSaveBtn.disabled = false;
+        let targetSelectElement;
+        let ajaxUrl;
+
+        document.querySelectorAll('.quick-add-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const fieldName = e.currentTarget.dataset.field;
+                ajaxUrl = e.currentTarget.dataset.url;
+                modalTitle.textContent = e.currentTarget.dataset.title;
+                targetSelectElement = document.getElementById(`id_${fieldName}`);
+                quickAddModal.classList.remove('hidden');
+                quickAddModal.classList.add('flex');
+                modalNameInput.focus();
+            });
         });
-    });
+
+        const closeQuickAddModal = () => {
+            quickAddModal.classList.add('hidden');
+            quickAddModal.classList.remove('flex');
+            quickAddForm.reset();
+            modalError.textContent = '';
+        };
+
+        modalCancelBtn.addEventListener('click', closeQuickAddModal);
+        quickAddModal.addEventListener('click', e => {
+            if (e.target === quickAddModal) closeQuickAddModal();
+        });
+
+        quickAddForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            modalSaveBtn.disabled = true;
+            modalError.textContent = '';
+            
+            fetch(ajaxUrl, {
+                method: 'POST',
+                body: new FormData(quickAddForm),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    const newOption = new Option(data.name, data.id, true, true);
+                    targetSelectElement.appendChild(newOption);
+                    if ($.fn.select2) {
+                        $(targetSelectElement).trigger('change');
+                    }
+                    closeQuickAddModal();
+                } else {
+                    modalError.textContent = data.error || 'Bir hata oluştu.';
+                }
+            })
+            .catch(error => {
+                modalError.textContent = 'Sunucuyla iletişim kurulamadı.';
+            })
+            .finally(() => {
+                modalSaveBtn.disabled = false;
+            });
+        });
+    }
+
+    // ===================================================================
+    //         YENİ DEPO/RAF EKLEME MODALI İÇİN JS
+    // ===================================================================
+    const locationModal = document.getElementById('location-modal');
+    if (locationModal) {
+        const locationModalTitle = document.getElementById('location-modal-title');
+        const addShelfForm = document.getElementById('add-shelf-form');
+        const addWarehouseForm = document.getElementById('add-warehouse-form');
+        const openLocationModalBtn = document.getElementById('add-location-btn');
+        const showAddWarehouseLink = document.getElementById('show-add-warehouse-link');
+        const backToShelfFormBtn = document.getElementById('back-to-shelf-form-btn');
+        const locationModalCancelBtns = document.querySelectorAll('.location-modal-cancel-btn');
+        const mainShelfSelect = document.getElementById('id_shelf');
+        const modalWarehouseSelect = document.getElementById('modal-warehouse-select');
+
+        const openLocationModal = () => {
+            locationModal.classList.remove('hidden');
+            locationModal.classList.add('flex');
+            modalWarehouseSelect.innerHTML = '<option value="" selected disabled>Yükleniyor...</option>';
+            fetch("{% url 'inventory:ajax_get_warehouses' %}")
+                .then(response => response.json())
+                .then(data => {
+                    modalWarehouseSelect.innerHTML = '<option value="" selected disabled>Depo Seçin</option>';
+                    data.forEach(warehouse => {
+                        modalWarehouseSelect.add(new Option(warehouse.name, warehouse.id));
+                    });
+                });
+        };
+
+        const closeLocationModal = () => {
+            locationModal.classList.add('hidden');
+            locationModal.classList.remove('flex');
+            addShelfForm.reset();
+            addWarehouseForm.reset();
+            addWarehouseForm.classList.add('hidden');
+            addShelfForm.classList.remove('hidden');
+            locationModalTitle.textContent = 'Yeni Raf Ekle';
+        };
+
+        openLocationModalBtn.addEventListener('click', openLocationModal);
+        locationModalCancelBtns.forEach(btn => btn.addEventListener('click', closeLocationModal));
+        locationModal.addEventListener('click', e => {
+            if (e.target === locationModal) closeLocationModal();
+        });
+
+        showAddWarehouseLink.addEventListener('click', e => {
+            e.preventDefault();
+            addShelfForm.classList.add('hidden');
+            addWarehouseForm.classList.remove('hidden');
+            locationModalTitle.textContent = 'Yeni Depo Ekle';
+            document.getElementById('modal-warehouse-name-input').focus();
+        });
+
+        backToShelfFormBtn.addEventListener('click', () => {
+            addWarehouseForm.classList.add('hidden');
+            addShelfForm.classList.remove('hidden');
+            locationModalTitle.textContent = 'Yeni Raf Ekle';
+        });
+
+        addWarehouseForm.addEventListener('submit', e => {
+            e.preventDefault();
+            const submitBtn = e.currentTarget.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            fetch("{% url 'inventory:ajax_add_warehouse' %}", {
+                method: 'POST',
+                body: new FormData(addWarehouseForm),
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrfToken },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const newOption = new Option(data.name, data.id, true, true);
+                    modalWarehouseSelect.add(newOption, null);
+                    backToShelfFormBtn.click();
+                    addWarehouseForm.reset();
+                } else {
+                    alert('Hata: ' + JSON.stringify(data.errors));
+                }
+            })
+            .catch(err => alert('Sunucu hatası!'))
+            .finally(() => submitBtn.disabled = false);
+        });
+
+        addShelfForm.addEventListener('submit', e => {
+            e.preventDefault();
+            const submitBtn = e.currentTarget.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            fetch("{% url 'inventory:ajax_add_shelf' %}", {
+                method: 'POST',
+                body: new FormData(addShelfForm),
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrfToken },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const newOption = new Option(data.name, data.id, true, true);
+                    mainShelfSelect.add(newOption, null);
+                    if ($.fn.select2) {
+                        $(mainShelfSelect).trigger('change');
+                    }
+                    closeLocationModal();
+                } else {
+                    alert('Hata: ' + JSON.stringify(data.errors));
+                }
+            })
+            .catch(err => alert('Sunucu hatası!'))
+            .finally(() => submitBtn.disabled = false);
+        });
+    }
 });
 </script>
-{% endblock %}
+{% endblock extra_js %}
