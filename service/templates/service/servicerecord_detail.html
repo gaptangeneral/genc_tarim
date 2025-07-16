@@ -19,7 +19,7 @@
         <div class="lg:col-span-2 space-y-6">
             <div class="bg-white p-6 rounded-xl shadow">
                 <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Servis Detayları</h3>
-                <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6 text-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6 text-sm">
                     {% csrf_token %}
                     <div class="sm:col-span-1">
                         <dt class="font-medium text-gray-500">Durum</dt>
@@ -37,20 +37,23 @@
                         <dt class="font-medium text-gray-500">Teknisyen Notları</dt>
                         <dd class="mt-1 text-gray-900 whitespace-pre-wrap">{{ record.technician_notes|default:"-" }}</dd>
                     </div>
-                    <div class="sm:col-span-1">
-                        <label for="id_labor_cost" class="block text-gray-500 font-medium">İşçilik Ücreti</label>
-                        <input type="number" step="0.01" name="labor_cost" id="id_labor_cost" value="{{ record.labor_cost|default:0 }}" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 transition" />
-                    </div>
-                    <div>
-                <label for="id_kdv_rate" class="block text-gray-500 font-medium">KDV Oranı (%)</label>
-                <input type="number" step="0.01" name="kdv_rate" id="id_kdv_rate" value="{{ record.kdv_rate|stringformat:".2f"|default:20 }}" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md" />
-            </div>
-                    <div class="sm:col-span-1">
-    <dt class="font-medium text-gray-500">Toplam Tutar</dt>
-    <dd class="mt-1 text-2xl font-bold text-gray-900">₺{{ grand_total|floatformat:2 }}</dd>
-</div>
-                    <div class="md:col-span-2">
-                        <button type="submit" class="bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg text-sm">İşçilik Ücretini Güncelle</button>
+                </div>
+                
+                <!-- İşçilik Ücreti ve KDV Güncelleme Formu -->
+                <form method="post" class="mt-6 pt-6 border-t">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label for="id_labor_cost" class="block text-gray-500 font-medium mb-1">İşçilik Ücreti</label>
+                            <input type="number" step="0.01" name="labor_cost" id="id_labor_cost" value="{{ labor_cost }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 transition" />
+                        </div>
+                        <div>
+                            <label for="id_kdv_rate" class="block text-gray-500 font-medium mb-1">KDV Oranı (%)</label>
+                            <input type="number" step="0.01" name="kdv_rate" id="id_kdv_rate" value="{{ kdv_rate }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 transition" />
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full bg-primary hover:bg-dark text-white px-4 py-2 rounded-lg text-sm">Güncelle</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -58,36 +61,92 @@
             <div class="bg-white p-6 rounded-xl shadow">
                 <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Kullanılan Parçalar</h3>
                 <table class="min-w-full divide-y divide-gray-200">
-                    <tbody>
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Parça</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adet</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Fiyat</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
                         {% for part_used in record.parts_used.all %}
                         <tr class="text-sm">
-                            <td class="py-2 font-medium text-gray-800">{{ part_used.part.name }}</td>
-                            <td class="py-2 text-gray-600">{{ part_used.quantity }} Adet</td>
-                            <td class="py-2 text-right text-gray-800">₺{{ part_used.price_at_time_of_use|floatformat:2 }}</td>
+                            <td class="px-4 py-2 font-medium text-gray-800">{{ part_used.part.name }}</td>
+                            <td class="px-4 py-2 text-gray-600">{{ part_used.quantity }}</td>
+                            <td class="px-4 py-2 text-right text-gray-800">₺{{ part_used.price_at_time_of_use|floatformat:2 }}</td>
+                            <td class="px-4 py-2 text-right text-gray-900 font-medium">₺{{ part_used.total_price|floatformat:2 }}</td>
+                            <td class="px-4 py-2 text-center">
+                                <button onclick="deletePart({{ part_used.id }}, '{{ part_used.part.name }}')" 
+                                        class="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded transition-colors"
+                                        title="Parçayı Sil">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="3" class="py-4 text-center text-sm text-gray-500">Bu serviste henüz parça kullanılmadı.</td></tr>
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">Bu serviste henüz parça kullanılmadı.</td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                <form method="post" class="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                
+                <!-- Parça Ekleme Formu -->
+                <form method="post" class="mt-6 pt-6 border-t">
                     {% csrf_token %}
-                    <div class="md:col-span-2">
-                        <label for="{{ part_form.part.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Eklenecek Parça</label>
-                        <div class="flex items-center gap-x-2">
-                            {{ part_form.part }}
-                            <button type="button" id="quick-add-part-btn" class="flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg w-10 h-10 flex items-center justify-center" title="Yeni Parça Ekle">
-                                <i class="fas fa-plus"></i>
-                            </button>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div class="md:col-span-2">
+                            <label for="{{ part_form.part.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Eklenecek Parça</label>
+                            <div class="flex items-center gap-x-2">
+                                {{ part_form.part }}
+                                <button type="button" id="quick-add-part-btn" class="flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg w-10 h-10 flex items-center justify-center" title="Yeni Parça Ekle">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="{{ part_form.quantity.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Adet</label>
+                            {{ part_form.quantity }}
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full bg-gray-700 hover:bg-black text-white px-4 py-2 rounded-lg text-sm">Parça Ekle</button>
                         </div>
                     </div>
-                    <div><label for="{{ part_form.quantity.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Adet</label>{{ part_form.quantity }}</div>
-                    <div><button type="submit" class="w-full bg-gray-700 hover:bg-black text-white px-4 py-2 rounded-lg text-sm">Parça Ekle</button></div>
                 </form>
             </div>
         </div>
 
         <div class="space-y-6">
+            <!-- Servis Toplamları -->
+            <div class="bg-white p-6 rounded-xl shadow h-fit">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Servis Toplamları</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span>Parça Toplamı</span>
+                        <span class="font-medium text-gray-900">₺{{ parts_total|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>İşçilik</span>
+                        <span class="font-medium text-gray-900">₺{{ labor_cost|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Ara Toplam</span>
+                        <span class="font-medium text-gray-900">₺{{ subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>KDV ({{ kdv_rate|floatformat:0 }}%)</span>
+                        <span class="font-medium text-gray-900">₺{{ kdv_amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-base font-semibold border-t pt-2">
+                        <span>Genel Toplam</span>
+                        <span class="text-blue-700">₺{{ grand_total|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Müşteri & Makine Bilgileri -->
             <div class="bg-white p-6 rounded-xl shadow h-fit">
                 <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Müşteri & Makine</h3>
                 <dl class="space-y-4 text-sm">
@@ -100,6 +159,7 @@
                 </dl>
             </div>
 
+            <!-- Barkod -->
             <div class="bg-white p-6 rounded-xl shadow h-fit">
                 <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Servis Takip Barkodu</h3>
                 <div class="text-center">
@@ -117,12 +177,79 @@
     </div>
 </div>
 
+<!-- Quick Add Modal -->
+<div id="quick-add-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form id="quick-add-form" class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Yeni Parça Ekle</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Parça Adı</label>
+                                <input type="text" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Fiyat</label>
+                                <input type="number" step="0.01" name="price" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                        </div>
+                        <div id="modal-error" class="text-red-600 text-sm mt-2"></div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Ekle
+                    </button>
+                    <button type="button" id="modal-cancel-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        İptal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-confirmation-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Parçayı Sil</h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500">
+                                "<span id="delete-part-name"></span>" parçasını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" id="confirm-delete-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    Sil
+                </button>
+                <button type="button" id="cancel-delete-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    İptal
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Existing modal functionality
     const modal = document.getElementById('quick-add-modal');
     const openBtn = document.getElementById('quick-add-part-btn');
     const cancelBtn = document.getElementById('modal-cancel-btn');
@@ -130,39 +257,109 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainPartSelect = document.querySelector('[name="part"]');
     const modalError = document.getElementById('modal-error');
 
+    // Delete modal functionality
+    const deleteModal = document.getElementById('delete-confirmation-modal');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const deletePartName = document.getElementById('delete-part-name');
+    let partToDelete = null;
+
     const openModal = () => { modal.classList.remove('hidden'); };
     const closeModal = () => { modal.classList.add('hidden'); quickAddForm.reset(); modalError.textContent = ''; };
 
+    const openDeleteModal = (partId, partName) => {
+        partToDelete = partId;
+        deletePartName.textContent = partName;
+        deleteModal.classList.remove('hidden');
+    };
+
+    const closeDeleteModal = () => {
+        deleteModal.classList.add('hidden');
+        partToDelete = null;
+    };
+
+    // Global function for delete button
+    window.deletePart = (partId, partName) => {
+        openDeleteModal(partId, partName);
+    };
+
+    // Event listeners
     if(openBtn) { openBtn.addEventListener('click', openModal); }
-    cancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    if(cancelBtn) { cancelBtn.addEventListener('click', closeModal); }
+    if(modal) { modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); }); }
 
-    quickAddForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        modalError.textContent = '';
+    if(cancelDeleteBtn) { cancelDeleteBtn.addEventListener('click', closeDeleteModal); }
+    if(deleteModal) { deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); }); }
 
-        fetch("{% url 'inventory:add_product_ajax' %}", {
-            method: 'POST',
-            body: new FormData(quickAddForm),
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        })
-        .then(response => {
-            if (!response.ok) { return response.json().then(err => Promise.reject(err)); }
-            return response.json();
-        })
-        .then(data => {
-            if (data.id) {
-                const newOption = new Option(data.name, data.id, true, true);
-                mainPartSelect.appendChild(newOption);
-                mainPartSelect.dispatchEvent(new Event('change'));
-                closeModal();
-            }
-        })
-        .catch(errorData => {
-            console.error('Hata:', errorData);
-            modalError.textContent = "Lütfen tüm zorunlu alanları doldurun veya girdiğiniz bilgileri kontrol edin.";
+    // Quick add form submission
+    if(quickAddForm) {
+        quickAddForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            modalError.textContent = '';
+
+            fetch("{% url 'inventory:add_product_ajax' %}", {
+                method: 'POST',
+                body: new FormData(quickAddForm),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            })
+            .then(response => {
+                if (!response.ok) { return response.json().then(err => Promise.reject(err)); }
+                return response.json();
+            })
+            .then(data => {
+                if (data.id) {
+                    const newOption = new Option(data.name, data.id, true, true);
+                    mainPartSelect.appendChild(newOption);
+                    mainPartSelect.dispatchEvent(new Event('change'));
+                    closeModal();
+                }
+            })
+            .catch(errorData => {
+                console.error('Hata:', errorData);
+                modalError.textContent = "Lütfen tüm zorunlu alanları doldurun veya girdiğiniz bilgileri kontrol edin.";
+            });
         });
-    });
+    }
+
+    // Confirm delete
+    if(confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', () => {
+            if (!partToDelete) return;
+
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch(`{% url 'service:delete_part_used' pk=0 %}`.replace('0', partToDelete), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Silme işlemi başarısız');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Reload page to update totals
+                    location.reload();
+                } else {
+                    alert('Parça silinirken bir hata oluştu: ' + (data.error || 'Bilinmeyen hata'));
+                }
+            })
+            .catch(error => {
+                console.error('Hata:', error);
+                alert('Parça silinirken bir hata oluştu: ' + error.message);
+            })
+            .finally(() => {
+                closeDeleteModal();
+            });
+        });
+    }
 });
 </script>
 {% endblock %}

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_tailwind',
     'django_select2',
+    'django.contrib.humanize',
     
     # Kendi Uygulamalarımız (Tam yollarıyla birlikte)
     'inventory.apps.InventoryConfig',

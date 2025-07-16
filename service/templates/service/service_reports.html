@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Zaman Filtresi -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border">
+        <div class="flex flex-wrap items-center gap-3">
+            <span class="font-semibold text-gray-700 mr-2">Zaman Aralığı:</span>
+            <a href="?period=7" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {% if active_period == '7' %}bg-blue-500 text-white shadow-md{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                Son 7 Gün
+            </a>
+            <a href="?period=30" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {% if active_period == '30' %}bg-blue-500 text-white shadow-md{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                Son 30 Gün
+            </a>
+            <a href="?period=month" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {% if active_period == 'month' %}bg-blue-500 text-white shadow-md{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                Bu Ay
+            </a>
+            <a href="?period=year" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {% if active_period == 'year' %}bg-blue-500 text-white shadow-md{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                Bu Yıl
+            </a>
+            <span class="ml-auto text-sm text-gray-500">
+                {{ start_date|date:"d.m.Y" }} - {{ end_date|date:"d.m.Y" }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Özet Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-tools text-blue-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-gray-500 text-sm">Toplam Servis</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mt-1">{{ total_services }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-green-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-gray-500 text-sm">Tamamlanan</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mt-1">{{ completed_services }}</h3>
+                    <p class="text-xs text-green-600 mt-1">%{{ completion_rate }} tamamlanma</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-yellow-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-gray-500 text-sm">Devam Eden</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mt-1">{{ pending_services }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-red-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-gray-500 text-sm">İptal Edilen</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mt-1">{{ cancelled_services }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mali Durum -->
+    <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Mali Durum ({{ period_label }})</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-500 text-sm">Toplam Gelir</p>
+                <h4 class="text-2xl font-bold text-gray-900 mt-1">₺{{ total_revenue|floatformat:2 }}</h4>
+            </div>
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-500 text-sm">Parça Geliri</p>
+                <h4 class="text-xl font-bold text-gray-900 mt-1">₺{{ total_parts_revenue|floatformat:2 }}</h4>
+            </div>
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-500 text-sm">İşçilik Geliri</p>
+                <h4 class="text-xl font-bold text-gray-900 mt-1">₺{{ total_labor_revenue|floatformat:2 }}</h4>
+            </div>
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-500 text-sm">KDV Toplamı</p>
+                <h4 class="text-xl font-bold text-gray-900 mt-1">₺{{ total_tax_revenue|floatformat:2 }}</h4>
+            </div>
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <p class="text-gray-600 text-sm font-medium">Ort. Servis Bedeli</p>
+                <h4 class="text-xl font-bold text-blue-600 mt-1">₺{{ average_service_value|floatformat:2 }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grafikler -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Günlük Servis Grafiği -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Günlük Servis Analizi</h3>
+            <div class="relative h-80">
+                <canvas id="dailyServiceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Durum Dağılımı -->
+        <div class="bg-white p-6 rounded-xl shadow">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Durum Dağılımı</h3>
+            <div class="relative h-80">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teknisyen Performansı -->
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Teknisyen Performansı</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teknisyen</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Toplam İş</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Tamamlanan</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Başarı Oranı</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ort. Tamamlama (Gün)</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for tech in technician_stats %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ tech.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{{ tech.total_services }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{{ tech.completed_services }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if tech.completion_rate >= 80 %}bg-green-100 text-green-800{% elif tech.completion_rate >= 60 %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                %{{ tech.completion_rate }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{{ tech.avg_completion_days }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-gray-500">Teknisyen verisi bulunamadı.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- İki Sütunlu Analiz -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Marka Analizi -->
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Marka Bazlı Servis Dağılımı</h3>
+            </div>
+            <div class="p-4">
+                {% for brand in brand_stats|slice:":10" %}
+                <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-900">{{ brand.machine_brand }}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500">{{ brand.count }} servis</span>
+                        <span class="text-xs text-green-600">({{ brand.completed }} tamamlandı)</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center py-4 text-gray-500">Veri bulunamadı.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- En Çok Kullanılan Parçalar -->
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">En Çok Kullanılan Parçalar</h3>
+            </div>
+            <div class="p-4">
+                {% for part in top_parts|slice:":10" %}
+                <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-900 truncate flex-1 mr-2">{{ part.part__name }}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-gray-700">{{ part.total_quantity }} adet</span>
+                        <span class="text-xs text-gray-500">({{ part.usage_count }} kez)</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center py-4 text-gray-500">Parça kullanımı bulunamadı.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Grafik varsayılan ayarları
+    Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+    Chart.defaults.color = '#6B7280';
+    
+    // Günlük Servis Grafiği
+    const dailyCtx = document.getElementById('dailyServiceChart');
+    if (dailyCtx) {
+        new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: {{ chart_dates|safe }},
+                datasets: [{
+                    label: 'Toplam Servis',
+                    data: {{ chart_totals|safe }},
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }, {
+                    label: 'Tamamlanan',
+                    data: {{ chart_completed|safe }},
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Durum Dağılımı Pasta Grafiği
+    const statusCtx = document.getElementById('statusChart');
+    if (statusCtx) {
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ status_labels|safe }},
+                datasets: [{
+                    data: {{ status_counts|safe }},
+                    backgroundColor: [
+                        'rgba(34, 197, 94, 0.8)',   // Yeşil - Tamamlandı
+                        'rgba(59, 130, 246, 0.8)',   // Mavi - Devam eden
+                        'rgba(251, 146, 60, 0.8)',   // Turuncu - Bekleyen
+                        'rgba(239, 68, 68, 0.8)',    // Kırmızı - İptal
+                        'rgba(168, 85, 247, 0.8)',   // Mor
+                        'rgba(250, 204, 21, 0.8)',   // Sarı
+                        'rgba(156, 163, 175, 0.8)'   // Gri
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
