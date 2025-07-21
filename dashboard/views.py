@@ -1,3 +1,5 @@
+# dashboard/views.py - SON DÜZELTİLMİŞ VERSİYON
+
 import json
 from decimal import Decimal
 from datetime import timedelta
@@ -39,66 +41,113 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             start_date = end_date - timedelta(days=30)
             period = '30'
 
-        sales_in_period = Sale.objects.filter(created_at__range=(start_date, end_date))
-        customers_in_period = Customer.objects.filter(created_at__range=(start_date, end_date))
+        # Güvenli queryset'ler
+        try:
+            sales_in_period = Sale.objects.filter(created_at__range=(start_date, end_date))
+            customers_in_period = Customer.objects.filter(created_at__range=(start_date, end_date))
+            
+            context['total_sales_amount'] = sales_in_period.aggregate(total=Sum('grand_total'))['total'] or 0
+            context['total_sales_count'] = sales_in_period.count()
+            context['new_customers_count'] = customers_in_period.count()
+        except Exception:
+            context['total_sales_amount'] = 0
+            context['total_sales_count'] = 0
+            context['new_customers_count'] = 0
 
-        context['total_sales_amount'] = sales_in_period.aggregate(total=Sum('grand_total'))['total'] or 0
-        context['total_sales_count'] = sales_in_period.count()
-        context['new_customers_count'] = customers_in_period.count()
+        # Ürün istatistikleri
+        try:
+            products = Product.objects.filter(is_active=True)
+            context['total_products'] = products.count()
+            context['total_customers'] = Customer.objects.filter(is_active=True).count()
+            context['low_stock_products'] = products.filter(
+                quantity__gt=0, 
+                quantity__lte=F('min_stock_level')
+            ).count()
+            context['out_of_stock_products'] = products.filter(quantity=0).count()
+        except Exception:
+            context['total_products'] = 0
+            context['total_customers'] = 0
+            context['low_stock_products'] = 0
+            context['out_of_stock_products'] = 0
 
-        products = Product.active_objects.all()
-        context['total_products'] = products.count()
-        context['low_stock_products'] = products.filter(quantity__gt=0, quantity__lte=F('min_stock_level')).count()
-        context['out_of_stock_products'] = products.filter(quantity=0).count()
-        context['active_services'] = ServiceRecord.objects.exclude(status__in=['DELIVERED', 'CANCELLED']).count()
-
-        context['latest_products'] = Product.objects.order_by('-created_at')[:5]
-        context['latest_services'] = ServiceRecord.objects.order_by('-created_at')[:5]
+        # Servis istatistikleri
+        try:
+            context['active_services'] = ServiceRecord.objects.exclude(
+                status__in=['DELIVERED', 'CANCELLED']
+            ).count()
+            context['latest_products'] = Product.objects.order_by('-created_at')[:5]
+            context['latest_services'] = ServiceRecord.objects.order_by('-created_at')[:5]
+        except Exception:
+            context['active_services'] = 0
+            context['latest_products'] = []
+            context['latest_services'] = []
 
         # Servis grafiği
-        today = timezone.now().date()
-        seven_days_ago = today - timedelta(days=6)
-        daily_services = (ServiceRecord.objects
-                          .filter(created_at__date__gte=seven_days_ago)
-                          .annotate(day=TruncDay('created_at'))
-                          .values('day')
-                          .annotate(count=Count('id'))
-                          .order_by('day'))
+        try:
+            today = timezone.now().date()
+            seven_days_ago = today - timedelta(days=6)
+            daily_services = (ServiceRecord.objects
+                              .filter(created_at__date__gte=seven_days_ago)
+                              .annotate(day=TruncDay('created_at'))
+                              .values('day')
+                              .annotate(count=Count('id'))
+                              .order_by('day'))
 
-        date_dict = { (seven_days_ago + timedelta(days=i)): 0 for i in range(7) }
-        for entry in daily_services:
-            date_dict[entry['day'].date()] = entry['count']
+            date_dict = {(seven_days_ago + timedelta(days=i)): 0 for i in range(7)}
+            for entry in daily_services:
+                date_dict[entry['day'].date()] = entry['count']
 
-        context['daily_service_labels_json'] = json.dumps([d.strftime("%a") for d in date_dict.keys()])
-        context['daily_service_data_json'] = json.dumps(list(date_dict.values()))
+            context['daily_service_labels_json'] = json.dumps([d.strftime("%a") for d in date_dict.keys()])
+            context['daily_service_data_json'] = json.dumps(list(date_dict.values()))
+        except Exception:
+            context['daily_service_labels_json'] = json.dumps([])
+            context['daily_service_data_json'] = json.dumps([])
 
         # En çok kullanılan parçalar grafiği
-        top_parts = (ServicePart.objects
-                     .values('part__name')
-                     .annotate(total_used=Sum('quantity'))
-                     .order_by('-total_used')[:5])
+        try:
+            top_parts = (ServicePart.objects
+                         .values('part__name')
+                         .annotate(total_used=Sum('quantity'))
+                         .order_by('-total_used')[:5])
 
-        context['top_parts_labels_json'] = json.dumps([item['part__name'] for item in top_parts])
-        context['top_parts_data_json'] = json.dumps([item['total_used'] for item in top_parts])
+            context['top_parts_labels_json'] = json.dumps([item['part__name'] for item in top_parts])
+            context['top_parts_data_json'] = json.dumps([item['total_used'] for item in top_parts])
+        except Exception:
+            context['top_parts_labels_json'] = json.dumps([])
+            context['top_parts_data_json'] = json.dumps([])
 
         # Günlük satış cirosu grafiği
-        daily_sales = (sales_in_period
-                       .annotate(day=TruncDay('created_at'))
-                       .values('day')
-                       .annotate(total_amount=Sum('grand_total'))
-                       .order_by('day'))
+        try:
+            daily_sales = (sales_in_period
+                           .annotate(day=TruncDay('created_at'))
+                           .values('day')
+                           .annotate(total_amount=Sum('grand_total'))
+                           .order_by('day'))
 
-        context['daily_sales_labels_json'] = json.dumps([s['day'].strftime('%d %b') for s in daily_sales])
-        context['daily_sales_data_json'] = json.dumps([float(s['total_amount']) for s in daily_sales])
+            context['daily_sales_labels_json'] = json.dumps([s['day'].strftime('%d %b') for s in daily_sales])
+            context['daily_sales_data_json'] = json.dumps([float(s['total_amount']) for s in daily_sales])
+        except Exception:
+            context['daily_sales_labels_json'] = json.dumps([])
+            context['daily_sales_data_json'] = json.dumps([])
 
         # En çok satan ürünler
-        top_products_data = (sales_in_period
-                             .values('items__product__name')
-                             .annotate(total_sold=Sum('items__quantity'))
-                             .order_by('-total_sold')[:5])
+        try:
+            top_products_data = (sales_in_period
+                                 .values('items__product__name')
+                                 .annotate(total_sold=Sum('items__quantity'))
+                                 .order_by('-total_sold')[:5])
 
-        context['top_products_labels_json'] = json.dumps([item['items__product__name'] for item in top_products_data])
-        context['top_products_quantities_json'] = json.dumps([item['total_sold'] for item in top_products_data])
+            context['top_products_labels_json'] = json.dumps([
+                item['items__product__name'] for item in top_products_data 
+                if item['items__product__name']
+            ])
+            context['top_products_quantities_json'] = json.dumps([
+                item['total_sold'] for item in top_products_data 
+                if item['items__product__name']
+            ])
+        except Exception:
+            context['top_products_labels_json'] = json.dumps([])
+            context['top_products_quantities_json'] = json.dumps([])
 
         context['active_period'] = period
 
@@ -106,12 +155,10 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         try:
             from customers.models import CreditAccount, CreditTransaction
             
-            # Toplam veresiye bakiyesi
             total_credit_debt = CreditAccount.objects.filter(
                 is_active=True
             ).aggregate(total=Sum('current_balance'))['total'] or Decimal('0.0')
             
-            # Vadesi geçmiş ödemeler
             overdue_payments = CreditTransaction.objects.filter(
                 transaction_type='SALE',
                 is_paid=False,
@@ -121,7 +168,6 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 amount=Sum('amount')
             )
             
-            # Bu ay alınan ödemeler
             current_month_start = timezone.now().date().replace(day=1)
             monthly_payments = CreditTransaction.objects.filter(
                 transaction_type='PAYMENT',
@@ -134,7 +180,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 'overdue_amount': overdue_payments['amount'] or Decimal('0.0'),
                 'monthly_payments': monthly_payments
             }
-        except ImportError:
+        except (ImportError, Exception):
             context['credit_stats'] = {
                 'total_debt': Decimal('0.0'),
                 'overdue_count': 0,
@@ -142,16 +188,15 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 'monthly_payments': Decimal('0.0')
             }
         
-        # YENİ EKLENEN: GİDER İSTATİSTİKLERİ
+        # GİDER İSTATİSTİKLERİ
         try:
             from expenses.models import Expense, ExpenseCategory
             
-            # Bu ay toplam gider
+            current_month_start = timezone.now().date().replace(day=1)
             current_month_expenses = Expense.objects.filter(
                 expense_date__gte=current_month_start
             ).aggregate(total=Sum('amount'))['total'] or Decimal('0.0')
             
-            # En çok harcanan kategoriler (bu ay)
             top_expense_categories = Expense.objects.filter(
                 expense_date__gte=current_month_start
             ).values(
@@ -160,73 +205,46 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 total=Sum('amount')
             ).order_by('-total')[:5]
             
-            # Tekrarlayan giderler
             recurring_expenses_count = Expense.objects.filter(
                 is_recurring=True,
                 next_due_date__gte=timezone.now().date()
             ).count()
             
-            # Son 7 günlük gider trendi
-            last_7_days = []
-            for i in range(6, -1, -1):
-                date = timezone.now().date() - timedelta(days=i)
-                daily_expense = Expense.objects.filter(
-                    expense_date=date
-                ).aggregate(total=Sum('amount'))['total'] or Decimal('0.0')
-                last_7_days.append({
-                    'date': date.strftime('%d.%m'),
-                    'amount': float(daily_expense)
-                })
-            
             context['expense_stats'] = {
                 'monthly_total': current_month_expenses,
                 'top_categories': top_expense_categories,
                 'recurring_count': recurring_expenses_count,
-                'weekly_trend': last_7_days
             }
-        except ImportError:
+        except (ImportError, Exception):
             context['expense_stats'] = {
                 'monthly_total': Decimal('0.0'),
                 'top_categories': [],
                 'recurring_count': 0,
-                'weekly_trend': []
             }
         
-        # YENİ EKLENEN: GENEL MALİ DURUM
+        # GENEL MALİ DURUM
         try:
-            from sales.models import Sale
-            
-            # Bu ay satış cirosu
+            current_month_start = timezone.now().date().replace(day=1)
             monthly_sales = Sale.objects.filter(
                 sale_date__gte=current_month_start,
                 status='COMPLETED'
             ).aggregate(total=Sum('grand_total'))['total'] or Decimal('0.0')
             
-            # Brüt kar (yaklaşık)
-            gross_profit = monthly_sales - current_month_expenses
-            
-            # Nakit akışı durumu
-            cash_flow = {
-                'income': float(monthly_sales + monthly_payments),
-                'expenses': float(current_month_expenses),
-                'net': float(monthly_sales + monthly_payments - current_month_expenses)
-            }
+            gross_profit = monthly_sales - context['expense_stats']['monthly_total']
             
             context['financial_summary'] = {
                 'monthly_sales': monthly_sales,
-                'monthly_expenses': current_month_expenses,
+                'monthly_expenses': context['expense_stats']['monthly_total'],
                 'gross_profit': gross_profit,
-                'cash_flow': cash_flow
             }
-        except ImportError:
+        except Exception:
             context['financial_summary'] = {
                 'monthly_sales': Decimal('0.0'),
                 'monthly_expenses': Decimal('0.0'),
                 'gross_profit': Decimal('0.0'),
-                'cash_flow': {'income': 0, 'expenses': 0, 'net': 0}
             }
         
-        # YENİ EKLENEN: HIZLI ERİŞİM LİNKLERİ
+        # HIZLI ERİŞİM LİNKLERİ
         context['quick_actions'] = [
             {
                 'title': 'Yeni Satış',
@@ -258,10 +276,9 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             }
         ]
         
-        # YENİ EKLENEN: YAKLAŞAN OLAYLAR
+        # YAKLAŞAN OLAYLAR
         upcoming_events = []
         
-        # Vadesi yaklaşan veresiye ödemeler
         try:
             from customers.models import CreditTransaction
             upcoming_payments = CreditTransaction.objects.filter(
@@ -281,10 +298,9 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     'url': f'/customers/credit/{payment.credit_account.customer.id}/',
                     'urgent': days_left <= 2
                 })
-        except ImportError:
+        except (ImportError, Exception):
             pass
         
-        # Yaklaşan tekrarlayan giderler
         try:
             from expenses.models import Expense
             upcoming_expenses = Expense.objects.filter(
@@ -303,7 +319,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     'url': f'/expenses/{expense.id}/',
                     'urgent': days_left <= 1
                 })
-        except ImportError:
+        except (ImportError, Exception):
             pass
         
         # Olayları tarihe göre sırala

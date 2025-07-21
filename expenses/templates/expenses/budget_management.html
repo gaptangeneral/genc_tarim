@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Özet Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-wallet text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Toplam Bütçe</p>
+                    <h3 class="text-2xl font-bold text-gray-900">₺{{ total_budget|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow">
+            <div class="flex items-center">
+                <div class="bg-red-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-money-bill-wave text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Harcanan</p>
+                    <h3 class="text-2xl font-bold text-gray-900">₺{{ total_spent|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow">
+            <div class="flex items-center">
+                <div class="bg-green-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-piggy-bank text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Kalan</p>
+                    <h3 class="text-2xl font-bold text-gray-900">₺{{ total_remaining|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow">
+            <div class="flex items-center">
+                <div class="bg-purple-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-calendar text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Bu Ay</p>
+                    <h3 class="text-xl font-bold text-gray-900">{{ current_month|date:"F Y" }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bütçe Performansı -->
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Kategori Bazlı Bütçe Performansı</h3>
+            <a href="{% url 'expenses:category_list' %}" class="text-blue-600 hover:text-blue-800 text-sm">
+                Kategorileri Yönet →
+            </a>
+        </div>
+        
+        <div class="p-6">
+            <div class="space-y-6">
+                {% for performance in budget_performance %}
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full mr-3" style="background-color: {{ performance.budget.category.color }}"></div>
+                            <h4 class="font-semibold text-gray-900">{{ performance.budget.category.name }}</h4>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-lg font-bold 
+                                {% if performance.status == 'over' %}text-red-600
+                                {% elif performance.status == 'warning' %}text-yellow-600
+                                {% else %}text-green-600{% endif %}">
+                                ₺{{ performance.spent|floatformat:2 }} / ₺{{ performance.budget.budget_amount|floatformat:2 }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full bg-gray-200 rounded-full h-3 mb-2">
+                        <div class="h-3 rounded-full transition-all duration-300
+                            {% if performance.status == 'over' %}bg-red-500
+                            {% elif performance.status == 'warning' %}bg-yellow-500
+                            {% else %}bg-green-500{% endif %}" 
+                             style="width: {{ performance.percentage|floatformat:1 }}%"></div>
+                    </div>
+                    
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">
+                            {% if performance.status == 'over' %}
+                                <i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>
+                                Bütçe %{{ performance.percentage|floatformat:1 }} aşıldı
+                            {% elif performance.status == 'warning' %}
+                                <i class="fas fa-exclamation-circle text-yellow-500 mr-1"></i>
+                                Bütçenin %{{ performance.percentage|floatformat:1 }}'i kullanıldı
+                            {% else %}
+                                <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                                Bütçenin %{{ performance.percentage|floatformat:1 }}'i kullanıldı
+                            {% endif %}
+                        </span>
+                        <span class="
+                            {% if performance.remaining >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            Kalan: ₺{{ performance.remaining|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-chart-pie text-4xl mb-4"></i>
+                    <p class="text-lg font-medium">Henüz bütçe tanımlanmamış</p>
+                    <p class="text-sm mt-2">Gider kategorileriniz için bütçe belirleyerek harcamalarınızı takip edebilirsiniz.</p>
+                    <a href="{% url 'expenses:category_list' %}" class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                        Kategorileri Yönet
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Hızlı İşlemler -->
+    <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Hızlı İşlemler</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="{% url 'expenses:expense_create' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                <div class="bg-blue-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-plus text-blue-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900">Yeni Gider</h4>
+                    <p class="text-sm text-gray-500">Gider kaydı ekle</p>
+                </div>
+            </a>
+            
+            <a href="{% url 'expenses:category_create' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-colors">
+                <div class="bg-green-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-tags text-green-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900">Yeni Kategori</h4>
+                    <p class="text-sm text-gray-500">Kategori oluştur</p>
+                </div>
+            </a>
+            
+            <a href="{% url 'expenses:expense_reports' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors">
+                <div class="bg-purple-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-chart-bar text-purple-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900">Detaylı Rapor</h4>
+                    <p class="text-sm text-gray-500">Gider analizi</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

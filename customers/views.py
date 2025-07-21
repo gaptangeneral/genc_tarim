@@ -1,3 +1,5 @@
+# customers/views.py - DÜZELTİLMİŞ VERSİYON
+
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
@@ -9,16 +11,15 @@ from django.db.models import Sum, Q
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Customer, CreditAccount, CreditTransaction
-from .forms import CreditAccountForm, CreditTransactionForm
-from datetime import timedelta
-
+from django.utils import timezone  # EKSİK OLAN İMPORT
+from datetime import timedelta     # EKSİK OLAN İMPORT
 from django.http import JsonResponse
 
+from .models import Customer, CreditAccount, CreditTransaction
+from .forms import CreditAccountForm, CreditTransactionForm
 from .models import Customer
 from service.models import ServiceRecord
-
-from .forms import CustomerForm,QuickCustomerForm
+from .forms import CustomerForm, QuickCustomerForm
 
 class CustomerListView(LoginRequiredMixin, ListView):
     permission_required = 'customers.view_customer'
@@ -96,13 +97,59 @@ def add_customer_ajax(request):
 @permission_required('customers.view_creditaccount')
 def credit_account_list(request):
     """Cari hesap listesi"""
+    # Tüm aktif cari hesapları getir (borcu 0 olan da dahil)
     accounts = CreditAccount.objects.select_related('customer').filter(
-        is_active=True,
-        current_balance__gt=0
-    ).order_by('-current_balance')
+        is_active=True
+    ).order_by('-current_balance', 'customer__first_name', 'customer__company_name')
     
-    # Toplam borç hesapla
-    total_debt = accounts.aggregate(total=Sum('current_balance'))['total'] or 0
+    # Filtreler
+    search = request.GET.get('search')
+    min_debt = request.GET.get('min_debt')
+    status = request.GET.get('status')
+    
+    if search:
+        accounts = accounts.filter(
+            Q(customer__first_name__icontains=search) |
+            Q(customer__last_name__icontains=search) |
+            Q(customer__company_name__icontains=search) |
+            Q(customer__phone_number__icontains=search)
+        )
+    
+    if min_debt:
+        try:
+            min_debt_value = float(min_debt)
+            accounts = accounts.filter(current_balance__gte=min_debt_value)
+        except ValueError:
+            pass
+    
+    if status == 'overdue':
+        # Vadesi geçmiş borcu olan müşteriler
+        overdue_accounts = CreditTransaction.objects.filter(
+            is_paid=False,
+            due_date__lt=timezone.now().date(),
+            transaction_type='SALE'
+        ).values_list('credit_account_id', flat=True).distinct()
+        accounts = accounts.filter(id__in=overdue_accounts)
+    elif status == 'current':
+        # Sadece aktif borcu olan ama vadesi geçmemiş
+        accounts = accounts.filter(current_balance__gt=0)
+        overdue_accounts = CreditTransaction.objects.filter(
+            is_paid=False,
+            due_date__lt=timezone.now().date(),
+            transaction_type='SALE'
+        ).values_list('credit_account_id', flat=True).distinct()
+        accounts = accounts.exclude(id__in=overdue_accounts)
+    elif status == 'debt':
+        # Sadece borcu olan müşteriler
+        accounts = accounts.filter(current_balance__gt=0)
+    elif status == 'clean':
+        # Sadece borcu olmayan müşteriler
+        accounts = accounts.filter(current_balance=0)
+    
+    # Toplam borç hesapla (sadece borcu olanlar)
+    total_debt = accounts.filter(current_balance__gt=0).aggregate(
+        total=Sum('current_balance')
+    )['total'] or 0
     
     # Vadesi geçmiş ödemeler
     overdue_count = CreditTransaction.objects.filter(
@@ -282,3 +329,76 @@ def mark_all_notifications_read(request):
     """Tüm bildirimleri okundu olarak işaretle"""
     # Bu özellik için ayrı bir Notification modeli oluşturulabilir
     return JsonResponse({'success': True})
+
+@login_required
+def search_customers_ajax(request):
+    """AJAX ile müşteri arama"""
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'customers': []})
+    
+    # Sadece cari hesabı olmayan müşterileri ara
+    customers = Customer.objects.filter(
+        Q(first_name__icontains=query) |
+        Q(last_name__icontains=query) |
+        Q(company_name__icontains=query) |
+        Q(phone_number__icontains=query) |
+        Q(email__icontains=query),
+        is_active=True
+    ).order_by('first_name', 'company_name')[:20]
+    
+    customer_list = []
+    for customer in customers:
+        # Cari hesabı var mı kontrol et
+        has_credit_account = CreditAccount.objects.filter(customer=customer).exists()
+        
+        customer_list.append({
+            'id': customer.id,
+            'name': customer.get_display_name(),
+            'phone': customer.phone_number,
+            'email': customer.email,
+            'type': customer.get_customer_type_display(),
+            'has_credit_account': has_credit_account
+        })
+    
+    return JsonResponse({'customers': customer_list})
+
+@login_required
+@require_POST
+@permission_required('customers.add_creditaccount')
+def create_credit_account_ajax(request):
+    """AJAX ile mevcut müşteri için cari hesap oluştur"""
+    try:
+        import json
+        data = json.loads(request.body)
+        customer_id = data.get('customer_id')
+        credit_limit = data.get('credit_limit', 0)
+        
+        customer = get_object_or_404(Customer, id=customer_id, is_active=True)
+        
+        # Cari hesap zaten var mı kontrol et
+        if CreditAccount.objects.filter(customer=customer).exists():
+            return JsonResponse({
+                'success': False,
+                'message': 'Bu müşterinin zaten cari hesabı mevcut.'
+            })
+        
+        # Yeni cari hesap oluştur
+        CreditAccount.objects.create(
+            customer=customer,
+            credit_limit=credit_limit,
+            current_balance=0,
+            is_active=True
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{customer.get_display_name()} müşterisi cari hesap listesine eklendi.'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Bir hata oluştu: {str(e)}'
+        })

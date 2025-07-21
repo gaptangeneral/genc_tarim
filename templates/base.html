@@ -5,8 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Genç Tarım Paneli{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Tailwind Config -->
     <script>
         tailwind.config = {
             theme: {
@@ -17,358 +23,909 @@
                         'accent': '#8bc34a',
                         'dark': '#1b5e20',
                         'light': '#c8e6c9'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                        'bounce-in': 'bounceIn 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(0)' }
+                        },
+                        bounceIn: {
+                            '0%': { transform: 'scale(0.3)', opacity: '0' },
+                            '50%': { transform: 'scale(1.05)' },
+                            '70%': { transform: 'scale(0.9)' },
+                            '100%': { transform: 'scale(1)', opacity: '1' }
+                        }
                     }
                 }
             }
         }
     </script>
+    
+    <!-- Custom Styles -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Poppins', sans-serif; background-color: #f5f7fa; }
-        .sidebar { transition: all 0.3s ease; }
-        .nav-link { display: flex; align-items: center; padding: 0.75rem 1rem; color: #4b5563; border-radius: 0.5rem; transition: all 0.2s ease; }
-        .nav-link:hover { background-color: #e8f5e9; color: #2e7d32; }
-        .nav-link.active { background-color: #2e7d32; color: white; font-weight: 600; }
-        .nav-link-disabled { display: flex; align-items: center; padding: 0.75rem 1rem; color: #9ca3af; cursor: not-allowed; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary-color: #2e7d32;
+            --primary-dark: #1b5e20;
+            --primary-light: #c8e6c9;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar { 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+        
+        .user-avatar {
+            background: linear-gradient(135deg, var(--primary-light) 0%, #a5d6a7 100%);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+        
+        .status-indicator {
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        
+        /* Navigation Styles */
+        .nav-link { 
+            display: flex; 
+            align-items: center; 
+            padding: 0.875rem 1rem; 
+            color: #64748b; 
+            border-radius: 0.75rem; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            margin: 0.125rem 0.5rem;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+        
+        .nav-link:hover::before {
+            left: 100%;
+        }
+        
+        .nav-link:hover { 
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: var(--primary-color);
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .nav-link.active { 
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-weight: 600;
+            box-shadow: var(--shadow-lg);
+            transform: translateX(4px);
+        }
+        
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 50%;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 2px 0 0 2px;
+        }
+        
+        .nav-section-title {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem 1.5rem 0.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .nav-section-title:first-child {
+            margin-top: 0;
+        }
+        
+        /* Header Styles */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        /* Notification Styles */
+        .notification-btn {
+            position: relative;
+            padding: 0.75rem;
+            border-radius: 50%;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #f8fafc;
+        }
+        
+        .notification-btn:hover {
+            background: #f1f5f9;
+            transform: scale(1.05);
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            min-width: 1.25rem;
+            height: 1.25rem;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            animation: bounce-in 0.5s ease-out;
+            box-shadow: 0 0 0 2px white;
+        }
+        
+        .notification-panel {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-xl);
+            border-radius: 1rem;
+            animation: fade-in 0.3s ease-out;
+        }
+        
+        .notification-item {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 0.5rem;
+            margin: 0.25rem 0.5rem;
+        }
+        
+        .notification-item:hover {
+            background: #f8fafc;
+            transform: translateX(4px);
+            cursor: pointer;
+        }
+        
+        .notification-item[data-type="danger"] { 
+            border-left: 4px solid #ef4444;
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
+        }
+        
+        .notification-item[data-type="warning"] { 
+            border-left: 4px solid #f59e0b;
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, transparent 100%);
+        }
+        
+        .notification-item[data-type="success"] { 
+            border-left: 4px solid #10b981;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%);
+        }
+        
+        .notification-item[data-type="info"] { 
+            border-left: 4px solid #3b82f6;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, transparent 100%);
+        }
+        
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 280px;
+                height: 100vh;
+                z-index: 50;
+                transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            .sidebar.show {
+                left: 0;
+            }
+            
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 40;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            .sidebar-overlay.show {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+        
+        /* Message Alerts */
+        .alert {
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-md);
+            animation: slide-in 0.3s ease-out;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 1px solid #10b981;
+        }
+        
+        .alert-error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 1px solid #ef4444;
+        }
+        
+        .alert-info {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #3b82f6;
+        }
+        
+        /* Button Styles */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        /* Scrollbar Styles */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
     
-    {{ form.media.css }}
-
     {% block extra_css %}{% endblock %}
 </head>
 <body class="h-full">
 
     {% if user.is_authenticated %}
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+    
     <div class="flex h-screen">
-        <div id="sidebar" class="sidebar bg-white w-64 md:w-72 flex-col shadow-lg z-20 hidden md:flex">
-            <div class="flex items-center justify-center py-5 border-b border-gray-200">
-                <a href="{% url 'accounts:dashboard_redirect' %}" class="flex items-center space-x-2">
-                    <i class="fas fa-leaf text-2xl text-primary"></i>
-                    <h1 class="text-xl font-bold text-gray-800">Genç <span class="text-primary">Tarım</span></h1>
-                </a>
-            </div>
-            
-            <div class="p-4 flex items-center space-x-3 border-b border-gray-200">
-                <div class="relative">
-                    <div class="w-12 h-12 rounded-full bg-light flex items-center justify-center">
-                        <span class="text-2xl font-bold text-primary">{{ user.username.0|upper }}</span>
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar w-64 md:w-72 flex-col shadow-2xl z-50 hidden md:flex">
+            <!-- Header -->
+            <div class="sidebar-header flex items-center justify-between py-6 px-6">
+                <a href="{% url 'accounts:dashboard_redirect' %}" class="flex items-center space-x-3">
+                    <div class="bg-white bg-opacity-20 p-2 rounded-lg">
+                        <i class="fas fa-leaf text-2xl text-white"></i>
                     </div>
-                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-gray-800">{{ user.get_full_name|default:user.username }}</h3>
-                    <p class="text-sm text-gray-600">{% if user.is_superuser %}Yönetici{% elif user.groups.all.0.name == 'Teknisyen' %}Teknisyen{% else %}Personel{% endif %}</p>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Genç Tarım</h1>
+                        <p class="text-xs text-green-100">Yönetim Sistemi</p>
+                    </div>
+                </a>
+                <button id="closeSidebar" class="md:hidden text-white hover:text-green-200 p-1">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- User Info -->
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <div class="user-avatar w-12 h-12 rounded-full flex items-center justify-center">
+                            <span class="text-xl font-bold text-primary">{{ user.username.0|upper }}</span>
+                        </div>
+                        <span class="status-indicator absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-semibold text-gray-800 truncate">{{ user.get_full_name|default:user.username }}</h3>
+                        <p class="text-sm text-gray-600">
+                            {% if user.is_superuser %}
+                                <i class="fas fa-crown text-yellow-500 mr-1"></i>Yönetici
+                            {% elif 'Muhasebe' in user.groups.all|join:", " %}
+                                <i class="fas fa-calculator text-blue-500 mr-1"></i>Muhasebe
+                            {% elif 'Satış' in user.groups.all|join:", " %}
+                                <i class="fas fa-handshake text-green-500 mr-1"></i>Satış
+                            {% elif 'Teknisyen' in user.groups.all|join:", " %}
+                                <i class="fas fa-tools text-orange-500 mr-1"></i>Teknisyen
+                            {% else %}
+                                <i class="fas fa-user text-gray-500 mr-1"></i>Personel
+                            {% endif %}
+                        </p>
+                    </div>
                 </div>
             </div>
             
-            <nav class="flex-1 py-4">
-    <ul class="space-y-1 px-2">
-    {% if user.is_superuser %}
-        <li><h3 class="px-4 mt-2 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Yönetim</h3></li>
-        <li><a href="{% url 'dashboard:index' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Pano</span></a></li>
-        <li><a href="{% url 'service:servicerecord_list' %}" class="nav-link"><i class="fas fa-tools fa-fw mr-3"></i><span class="text-sm">Servis Yönetimi</span></a></li>
-        <li><a href="{% url 'service:service_reports' %}" class="nav-link"><i class="fas fa-chart-bar fa-fw mr-3"></i><span class="text-sm">Servis Raporları</span></a></li>
-        <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
-        
-        <!-- YENİ EKLENEN: VERESİYE YÖNETİMİ -->
-        <li><a href="{% url 'customers:credit_account_list' %}" class="nav-link"><i class="fas fa-credit-card fa-fw mr-3"></i><span class="text-sm">Veresiye Yönetimi</span></a></li>
-        
-        <li><a href="{% url 'inventory:reports_page' %}" class="nav-link"><i class="fas fa-chart-line fa-fw mr-3"></i><span class="text-sm">Raporlar</span></a></li>
-        
-        <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Satış Yönetimi</h3></li>
-        <li><a href="{% url 'sales:pos_terminal' %}" class="nav-link"><i class="fas fa-cash-register fa-fw mr-3"></i><span class="text-sm">Satış Ekranı</span></a></li>
-        <li><a href="{% url 'sales:sale_history_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span></a></li>
+            <!-- Navigation -->
+            <nav class="flex-1 py-4 overflow-y-auto">
+                <ul class="space-y-1">
+                {% if user.is_superuser %}
+                    <!-- Yönetici Menüsü -->
+                    <li><h3 class="nav-section-title">Yönetim Paneli</h3></li>
+                    <li><a href="{% url 'dashboard:index' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Ana Pano</span></a></li>
+                    <li><a href="{% url 'service:servicerecord_list' %}" class="nav-link"><i class="fas fa-tools fa-fw mr-3"></i><span class="text-sm">Servis Yönetimi</span></a></li>
+                    <li><a href="{% url 'service:service_reports' %}" class="nav-link"><i class="fas fa-chart-bar fa-fw mr-3"></i><span class="text-sm">Servis Raporları</span></a></li>
+                    <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteri Yönetimi</span></a></li>
+                    <li><a href="{% url 'customers:credit_account_list' %}" class="nav-link"><i class="fas fa-credit-card fa-fw mr-3"></i><span class="text-sm">Veresiye Yönetimi</span></a></li>
+                    <li><a href="{% url 'inventory:reports_page' %}" class="nav-link"><i class="fas fa-chart-line fa-fw mr-3"></i><span class="text-sm">Genel Raporlar</span></a></li>
+                    
+                    <li><h3 class="nav-section-title">Satış İşlemleri</h3></li>
+                    <li><a href="{% url 'sales:pos_terminal' %}" class="nav-link"><i class="fas fa-cash-register fa-fw mr-3"></i><span class="text-sm">Satış Ekranı (POS)</span></a></li>
+                    <li><a href="{% url 'sales:sale_history_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span></a></li>
 
-        <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Mali İşler</h3></li>
-        <!-- YENİ EKLENEN: GİDER YÖNETİMİ -->
-        <li><a href="{% url 'expenses:expense_list' %}" class="nav-link"><i class="fas fa-money-bill-wave fa-fw mr-3"></i><span class="text-sm">Gider Yönetimi</span></a></li>
-        <li><a href="{% url 'expenses:expense_reports' %}" class="nav-link"><i class="fas fa-chart-pie fa-fw mr-3"></i><span class="text-sm">Gider Raporları</span></a></li>
-        <li><a href="{% url 'expenses:budget_management' %}" class="nav-link"><i class="fas fa-calculator fa-fw mr-3"></i><span class="text-sm">Bütçe Yönetimi</span></a></li>
-        <li><a href="{% url 'expenses:category_list' %}" class="nav-link"><i class="fas fa-tags fa-fw mr-3"></i><span class="text-sm">Gider Kategorileri</span></a></li>
+                    <li><h3 class="nav-section-title">Mali İşler</h3></li>
+                    <li><a href="{% url 'expenses:expense_list' %}" class="nav-link"><i class="fas fa-money-bill-wave fa-fw mr-3"></i><span class="text-sm">Gider Yönetimi</span></a></li>
+                    <li><a href="{% url 'expenses:expense_reports' %}" class="nav-link"><i class="fas fa-chart-pie fa-fw mr-3"></i><span class="text-sm">Gider Raporları</span></a></li>
+                    <li><a href="{% url 'expenses:budget_management' %}" class="nav-link"><i class="fas fa-calculator fa-fw mr-3"></i><span class="text-sm">Bütçe Yönetimi</span></a></li>
+                    <li><a href="{% url 'expenses:category_list' %}" class="nav-link"><i class="fas fa-tags fa-fw mr-3"></i><span class="text-sm">Gider Kategorileri</span></a></li>
 
-        <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Veri Yönetimi</h3></li>
-        <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürünler</span></a></li>
-        {% if perms.inventory.view_category %}
-        <li><a href="{% url 'inventory:category_list' %}" class="nav-link"><i class="fas fa-sitemap fa-fw mr-3"></i><span class="text-sm">Ürün Kategorileri</span></a></li>
-        {% endif %}
+                    <li><h3 class="nav-section-title">Envanter</h3></li>
+                    <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürün Yönetimi</span></a></li>
+                    {% if perms.inventory.view_category %}
+                    <li><a href="{% url 'inventory:category_list' %}" class="nav-link"><i class="fas fa-sitemap fa-fw mr-3"></i><span class="text-sm">Kategoriler</span></a></li>
+                    {% endif %}
+                    
 
-        <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Kullanıcı İşlemleri</h3></li>
-        <li><a href="{% url 'accounts:user_add' %}" class="nav-link"><i class="fas fa-user-plus fa-fw mr-3"></i><span class="text-sm">Yeni Kullanıcı Ekle</span></a></li>
-        <li><a href="{% url 'accounts:user_list' %}" class="nav-link"><i class="fas fa-users-cog fa-fw mr-3"></i><span class="text-sm">Kullanıcıları Yönet</span></a></li>
-        <li><a href="{% url 'accounts:group_list' %}" class="nav-link"><i class="fas fa-user-shield fa-fw mr-3"></i><span class="text-sm">Gruplar & Yetkiler</span></a></li>
-        <li><a href="{% url 'logs:log_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Aktivite Kayıtları</span></a></li>
-        <li><a href="{% url 'backups:backup_management' %}" class="nav-link"><i class="fas fa-database fa-fw mr-3"></i><span class="text-sm">Yedekleme</span></a></li>
+                    <li><h3 class="nav-section-title">Sistem Yönetimi</h3></li>
+                    <li><a href="{% url 'accounts:user_add' %}" class="nav-link"><i class="fas fa-user-plus fa-fw mr-3"></i><span class="text-sm">Kullanıcı Ekle</span></a></li>
+                    <li><a href="{% url 'accounts:user_list' %}" class="nav-link"><i class="fas fa-users-cog fa-fw mr-3"></i><span class="text-sm">Kullanıcı Yönetimi</span></a></li>
+                    <li><a href="{% url 'accounts:group_list' %}" class="nav-link"><i class="fas fa-user-shield fa-fw mr-3"></i><span class="text-sm">Yetki Grupları</span></a></li>
+                    <li><a href="{% url 'logs:log_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Sistem Logları</span></a></li>
+                    <li><a href="{% url 'backups:backup_management' %}" class="nav-link"><i class="fas fa-database fa-fw mr-3"></i><span class="text-sm">Yedekleme</span></a></li>
 
-    {% elif 'Muhasebe' in user.groups.all|join:", " %}
-        <!-- MUHASEBE GRUBU İÇİN MENÜ -->
-        <li><h3 class="px-4 mt-2 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Mali İşler</h3></li>
-        <li><a href="{% url 'customers:credit_account_list' %}" class="nav-link"><i class="fas fa-credit-card fa-fw mr-3"></i><span class="text-sm">Veresiye Yönetimi</span></a></li>
-        <li><a href="{% url 'customers:credit_sales_report' %}" class="nav-link"><i class="fas fa-file-invoice-dollar fa-fw mr-3"></i><span class="text-sm">Veresiye Raporları</span></a></li>
-        <li><a href="{% url 'expenses:expense_list' %}" class="nav-link"><i class="fas fa-money-bill-wave fa-fw mr-3"></i><span class="text-sm">Gider Yönetimi</span></a></li>
-        <li><a href="{% url 'expenses:expense_reports' %}" class="nav-link"><i class="fas fa-chart-pie fa-fw mr-3"></i><span class="text-sm">Gider Raporları</span></a></li>
-        <li><a href="{% url 'expenses:budget_management' %}" class="nav-link"><i class="fas fa-calculator fa-fw mr-3"></i><span class="text-sm">Bütçe Yönetimi</span></a></li>
-        <li><a href="{% url 'sales:sale_history_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span></a></li>
-        <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
-        
-    {% elif 'Satış' in user.groups.all|join:", " %}
-        <!-- SATIŞ GRUBU İÇİN MENÜ -->
-        <li><h3 class="px-4 mt-2 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Satış</h3></li>
-        <li><a href="{% url 'sales:pos_terminal' %}" class="nav-link"><i class="fas fa-cash-register fa-fw mr-3"></i><span class="text-sm">Satış Ekranı</span></a></li>
-        <li><a href="{% url 'sales:sale_history_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span></a></li>
-        <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
-        <li><a href="{% url 'customers:credit_account_list' %}" class="nav-link"><i class="fas fa-credit-card fa-fw mr-3"></i><span class="text-sm">Veresiye Görüntüle</span></a></li>
-        <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürünler</span></a></li>
-        
-    {% elif 'Teknisyen' in user.groups.all|join:", " %}
-        <!-- TEKNİSYEN GRUBU İÇİN MENÜ -->
-        <li><h3 class="px-4 mt-2 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Servis</h3></li>
-        <li><a href="{% url 'service:technician_dashboard' %}" class="nav-link"><i class="fas fa-user-cog fa-fw mr-3"></i><span class="text-sm">Bana Atanan İşler</span></a></li>
-        <li><a href="{% url 'service:servicerecord_list' %}" class="nav-link"><i class="fas fa-tools fa-fw mr-3"></i><span class="text-sm">Tüm Servis Kayıtları</span></a></li>
-        <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
-        <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Yedek Parçalar</span></a></li>
-        
-    {% else %}
-        <!-- VARSAYILAN MENÜ -->
-        <li><a href="{% url 'dashboard:index' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Pano</span></a></li>
-        <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
-        <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürünler</span></a></li>
-    {% endif %}
-    </ul>
-</nav>
-
+                {% elif 'Muhasebe' in user.groups.all|join:", " %}
+                    <!-- Muhasebe Menüsü -->
+                    <li><h3 class="nav-section-title">Mali İşler</h3></li>
+                    <li><a href="{% url 'dashboard:index' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Mali Pano</span></a></li>
+                    <li><a href="{% url 'customers:credit_account_list' %}" class="nav-link"><i class="fas fa-credit-card fa-fw mr-3"></i><span class="text-sm">Veresiye Yönetimi</span></a></li>
+                    <li><a href="{% url 'customers:credit_sales_report' %}" class="nav-link"><i class="fas fa-file-invoice-dollar fa-fw mr-3"></i><span class="text-sm">Veresiye Raporları</span></a></li>
+                    <li><a href="{% url 'expenses:expense_list' %}" class="nav-link"><i class="fas fa-money-bill-wave fa-fw mr-3"></i><span class="text-sm">Gider Yönetimi</span></a></li>
+                    <li><a href="{% url 'expenses:expense_reports' %}" class="nav-link"><i class="fas fa-chart-pie fa-fw mr-3"></i><span class="text-sm">Gider Raporları</span></a></li>
+                    <li><a href="{% url 'expenses:budget_management' %}" class="nav-link"><i class="fas fa-calculator fa-fw mr-3"></i><span class="text-sm">Bütçe Kontrolü</span></a></li>
+                    
+                    <li><h3 class="nav-section-title">Satış & Müşteri</h3></li>
+                    <li><a href="{% url 'sales:sale_history_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span></a></li>
+                    <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
+                    
+                {% elif 'Satış' in user.groups.all|join:", " %}
+                    <!-- Satış Menüsü -->
+                    <li><h3 class="nav-section-title">Satış İşlemleri</h3></li>
+                    <li><a href="{% url 'sales:pos_terminal' %}" class="nav-link"><i class="fas fa-cash-register fa-fw mr-3"></i><span class="text-sm">Satış Ekranı</span></a></li>
+                    <li><a href="{% url 'sales:sale_history_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span></a></li>
+                    <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteri Yönetimi</span></a></li>
+                    <li><a href="{% url 'customers:credit_account_list' %}" class="nav-link"><i class="fas fa-credit-card fa-fw mr-3"></i><span class="text-sm">Veresiye Durumu</span></a></li>
+                    
+                    <li><h3 class="nav-section-title">Ürün Bilgileri</h3></li>
+                    <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürün Kataloğu</span></a></li>
+                    
+                {% elif 'Teknisyen' in user.groups.all|join:", " %}
+                    <!-- Teknisyen Menüsü -->
+                    <li><h3 class="nav-section-title">Servis İşlemleri</h3></li>
+                    <li><a href="{% url 'service:technician_dashboard' %}" class="nav-link"><i class="fas fa-user-cog fa-fw mr-3"></i><span class="text-sm">Atanan İşlerim</span></a></li>
+                    <li><a href="{% url 'service:servicerecord_list' %}" class="nav-link"><i class="fas fa-tools fa-fw mr-3"></i><span class="text-sm">Tüm Servis Kayıtları</span></a></li>
+                    <li><a href="{% url 'service:servicerecord_add' %}" class="nav-link"><i class="fas fa-plus-circle fa-fw mr-3"></i><span class="text-sm">Yeni Servis Kaydı</span></a></li>
+                    
+                    <li><h3 class="nav-section-title">Müşteri & Parça</h3></li>
+                    <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
+                    <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Yedek Parçalar</span></a></li>
+                    
+                {% else %}
+                    <!-- Varsayılan Menü -->
+                    <li><h3 class="nav-section-title">Genel</h3></li>
+                    <li><a href="{% url 'dashboard:index' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Ana Pano</span></a></li>
+                    <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
+                    <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürünler</span></a></li>
+                {% endif %}
+                </ul>
+            </nav>
             
+            <!-- Footer -->
             <div class="p-4 border-t border-gray-200">
-                <a href="{% url 'accounts:logout' %}" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                    <i class="fas fa-sign-out-alt w-6 text-center mr-3"></i>
-                    <span>Çıkış Yap</span>
+                <a href="{% url 'accounts:logout' %}" class="flex items-center px-4 py-3 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all duration-200 group">
+                    <i class="fas fa-sign-out-alt w-6 text-center mr-3 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium">Güvenli Çıkış</span>
                 </a>
             </div>
         </div>
         
+        <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <header class="bg-white shadow-sm">
-               <div class="flex items-center justify-between px-6 py-4">
-        <div class="flex items-center">
-            <button id="openSidebar" class="md:hidden text-gray-600 mr-4">
-                <i class="fas fa-bars text-xl"></i>
-            </button>
-            <h2 class="text-xl font-semibold text-gray-800">{% block page_title %}Panel{% endblock %}</h2>
-        </div>
-        
-        <div class="flex items-center space-x-4">
-            <!-- Bildirim Butonu -->
-            <div class="relative">
-                <button 
-                    id="notification-button" 
-                    class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
-                    onclick="toggleNotifications()"
-                >
-                    <i class="fas fa-bell text-xl"></i>
-                    {% if notification_count > 0 %}
-                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                        {{ notification_count|default:0 }}
-                    </span>
-                    {% endif %}
-                </button>
-                
-                <!-- Bildirim Paneli -->
-                <div 
-                    id="notification-panel" 
-                    class="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden"
-                >
-                    <div class="p-4 border-b border-gray-200">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-gray-900">Bildirimler</h3>
-                            {% if notification_count > 0 %}
-                            <span class="text-sm text-gray-500">{{ notification_count }} bildirim</span>
+            <!-- Header -->
+            <header class="header">
+                <div class="flex items-center justify-between px-6 py-4">
+                    <div class="flex items-center">
+                        <button id="openSidebar" class="md:hidden notification-btn mr-4 hover:bg-primary hover:text-white">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-800">{% block page_title %}Panel{% endblock %}</h2>
+                            <p class="text-sm text-gray-500">{{ user.get_full_name|default:user.username }} • {{ "now"|date:"d F Y, l" }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Hızlı Eylemler -->
+                        <div class="hidden lg:flex items-center space-x-3">
+                            {% if user.is_superuser or 'Satış' in user.groups.all|join:", " %}
+                            <a href="{% url 'sales:pos_terminal' %}" class="notification-btn hover:bg-green-500 hover:text-white" title="Hızlı Satış">
+                                <i class="fas fa-cash-register"></i>
+                            </a>
+                            {% endif %}
+                            
+                            {% if user.is_superuser or 'Muhasebe' in user.groups.all|join:", " %}
+                            <a href="{% url 'expenses:expense_create' %}" class="notification-btn hover:bg-red-500 hover:text-white" title="Yeni Gider">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </a>
+                            {% endif %}
+                            
+                            {% if user.is_superuser or 'Teknisyen' in user.groups.all|join:", " %}
+                            <a href="{% url 'service:servicerecord_add' %}" class="notification-btn hover:bg-blue-500 hover:text-white" title="Yeni Servis">
+                                <i class="fas fa-tools"></i>
+                            </a>
                             {% endif %}
                         </div>
-                    </div>
-                    
-                    <div class="max-h-96 overflow-y-auto">
-                        {% if notifications %}
-                            {% for notification in notifications %}
-                            <div class="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors notification-item" 
-                                 data-type="{{ notification.type }}"
-                                 onclick="window.location.href='{{ notification.link }}'">
-                                <div class="flex items-start space-x-3">
-                                    <div class="flex-shrink-0 mt-1">
-                                        <i class="{{ notification.icon }} text-lg 
-                                           {% if notification.type == 'danger' %}text-red-500
-                                           {% elif notification.type == 'warning' %}text-yellow-500
-                                           {% elif notification.type == 'success' %}text-green-500
-                                           {% else %}text-blue-500{% endif %}"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-900">{{ notification.title }}</p>
-                                        <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
-                                    </div>
-                                    <div class="flex-shrink-0">
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                                               {% if notification.priority == 'high' %}bg-red-100 text-red-800
-                                               {% elif notification.priority == 'medium' %}bg-yellow-100 text-yellow-800
-                                               {% else %}bg-blue-100 text-blue-800{% endif %}">
-                                            {{ notification.priority|capfirst }}
+                        
+                        <!-- Bildirim Butonu -->
+                        <div class="relative">
+                            <button 
+                                id="notification-button" 
+                                class="notification-btn hover:bg-blue-500 hover:text-white"
+                                onclick="toggleNotifications()"
+                                title="Bildirimler"
+                            >
+                                <i class="fas fa-bell text-xl"></i>
+                                {% if notification_count > 0 %}
+                                <span class="notification-badge">
+                                    {{ notification_count|default:0 }}
+                                </span>
+                                {% endif %}
+                            </button>
+                            
+                            <!-- Bildirim Paneli -->
+                            <div 
+                                id="notification-panel" 
+                                class="notification-panel absolute right-0 mt-3 w-96 max-w-sm z-50 hidden"
+                            >
+                                <div class="p-4 border-b border-gray-200">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                                            <i class="fas fa-bell mr-2 text-blue-500"></i>Bildirimler
+                                        </h3>
+                                        {% if notification_count > 0 %}
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                            {{ notification_count }} yeni
                                         </span>
+                                        {% endif %}
                                     </div>
                                 </div>
+                                
+                                <div class="max-h-96 overflow-y-auto">
+                                    {% if notifications %}
+                                        {% for notification in notifications %}
+                                        <div class="notification-item p-4 border-b border-gray-100" 
+                                             data-type="{{ notification.type }}"
+                                             onclick="window.location.href='{{ notification.link }}'">
+                                            <div class="flex items-start space-x-3">
+                                                <div class="flex-shrink-0 mt-1">
+                                                    <div class="w-8 h-8 rounded-full flex items-center justify-center
+                                                        {% if notification.type == 'danger' %}bg-red-100
+                                                        {% elif notification.type == 'warning' %}bg-yellow-100
+                                                        {% elif notification.type == 'success' %}bg-green-100
+                                                        {% else %}bg-blue-100{% endif %}">
+                                                        <i class="{{ notification.icon }} text-sm 
+                                                           {% if notification.type == 'danger' %}text-red-500
+                                                           {% elif notification.type == 'warning' %}text-yellow-500
+                                                           {% elif notification.type == 'success' %}text-green-500
+                                                           {% else %}text-blue-500{% endif %}"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-sm font-medium text-gray-900">{{ notification.title }}</p>
+                                                    <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+                                                    <p class="text-xs text-gray-400 mt-2">
+                                                        <i class="fas fa-clock mr-1"></i>Az önce
+                                                    </p>
+                                                </div>
+                                                <div class="flex-shrink-0">
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                                           {% if notification.priority == 'high' %}bg-red-100 text-red-800
+                                                           {% elif notification.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                                                           {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                        {% if notification.priority == 'high' %}Acil
+                                                        {% elif notification.priority == 'medium' %}Orta
+                                                        {% else %}Düşük{% endif %}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="p-8 text-center text-gray-500">
+                                            <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-check-circle text-2xl text-green-500"></i>
+                                            </div>
+                                            <p class="text-lg font-medium text-gray-900">Harika!</p>
+                                            <p class="text-sm mt-1">Şu anda bekleyen bildiriminiz yok.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if notifications %}
+                                <div class="p-4 border-t border-gray-200 bg-gray-50">
+                                    <button 
+                                        class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                        onclick="markAllAsRead()"
+                                    >
+                                        <i class="fas fa-check-double mr-2"></i>Tümünü Okundu İşaretle
+                                    </button>
+                                </div>
+                                {% endif %}
                             </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="p-8 text-center text-gray-500">
-                                <i class="fas fa-check-circle text-4xl mb-4 text-green-500"></i>
-                                <p class="text-lg font-medium">Tüm bildirimler temiz!</p>
-                                <p class="text-sm mt-1">Şu anda bekleyen bildiriminiz yok.</p>
+                        </div>
+                        
+                        <!-- Kullanıcı Menüsü -->
+                        <div class="relative">
+                            <button 
+                                id="user-menu-button"
+                                class="flex items-center space-x-2 notification-btn hover:bg-gray-500 hover:text-white"
+                                onclick="toggleUserMenu()"
+                            >
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-dark flex items-center justify-center">
+                                    <span class="text-white font-semibold text-sm">{{ user.username.0|upper }}</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            
+                            <!-- Kullanıcı Dropdown -->
+                            <div 
+                                id="user-menu" 
+                                class="absolute right-0 mt-3 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 hidden"
+                            >
+                                <div class="p-3 border-b border-gray-200">
+                                    <p class="font-medium text-gray-900">{{ user.get_full_name|default:user.username }}</p>
+                                    <p class="text-sm text-gray-500">{{ user.email|default:"E-posta yok" }}</p>
+                                </div>
+                                <div class="py-2">
+                                    
+                                    {% if user.is_superuser %}
+                                    <a href="{% url 'admin:index' %}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <i class="fas fa-cog mr-3"></i>Admin Panel
+                                    </a>
+                                    {% endif %}
+                                    <hr class="my-2">
+                                    <a href="{% url 'accounts:logout' %}" class="flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50">
+                                        <i class="fas fa-sign-out-alt mr-3"></i>Çıkış Yap
+                                    </a>
+                                </div>
                             </div>
-                        {% endif %}
+                        </div>
+                        
+                        {% block top_bar_actions %}{% endblock %}
                     </div>
-                    
-                    {% if notifications %}
-                    <div class="p-4 border-t border-gray-200">
-                        <button 
-                            class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
-                            onclick="markAllAsRead()"
-                        >
-                            Tümünü Okundu Olarak İşaretle
-                        </button>
-                    </div>
-                    {% endif %}
                 </div>
-            </div>
-            
-            {% block top_bar_actions %}{% endblock %}
-        </div>
-    </div>
             </header>
             
+            <!-- Main Content Area -->
             <main class="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <!-- Messages -->
                 {% if messages %}
-                    {% for message in messages %}
-                        <div class="mb-4 p-4 rounded-lg flex items-center space-x-3 {% if message.tags == 'error' %}bg-red-100 text-red-800 border border-red-300{% elif message.tags == 'success' %}bg-green-100 text-green-800 border border-green-300{% else %}bg-blue-100 text-blue-800 border border-blue-300{% endif %}">
-                            <i class="fas {% if message.tags == 'error' %}fa-times-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %}"></i>
-                            <span class="flex-1">{{ message }}</span>
-                            <button onclick="this.parentElement.remove()" class="text-current opacity-70 hover:opacity-100"><i class="fas fa-times"></i></button>
-                        </div>
-                    {% endfor %}
+                    <div class="mb-6 space-y-3">
+                        {% for message in messages %}
+                            <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %} flex items-center space-x-3">
+                                <i class="fas {% if message.tags == 'error' %}fa-times-circle text-red-600{% elif message.tags == 'success' %}fa-check-circle text-green-600{% else %}fa-info-circle text-blue-600{% endif %}"></i>
+                                <span class="flex-1 font-medium">{{ message }}</span>
+                                <button onclick="this.parentElement.remove()" class="text-current opacity-70 hover:opacity-100 transition-opacity">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
                 {% endif %}
+                
+                <!-- Page Content -->
                 {% block content %}{% endblock %}
             </main>
         </div>
     </div>
 
     {% else %}
+    <!-- Guest Content -->
     <div class="flex h-screen">
         {% block guest_content %}
         {% endblock guest_content %}
     </div>
     {% endif %}
 
+    <!-- Scripts -->
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('.nav-link');
-    
-    navLinks.forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
-            link.classList.add('active');
-        }
-    });
-});
-</script>
+        // Global Variables
+        let sidebarOpen = false;
+        let notificationPanelOpen = false;
+        let userMenuOpen = false;
 
-    <script>
-        const sidebar = document.getElementById('sidebar');
-        const openSidebarBtn = document.getElementById('openSidebar');
-        if (openSidebarBtn) {
-            openSidebarBtn.addEventListener('click', function() {
-                if (sidebar) {
-                    sidebar.classList.remove('hidden');
-                    sidebar.classList.add('flex');
-                    // Dışarıya tıklamayı dinlemek için bir overlay de eklenebilir
+        // Sidebar Functions
+        function openSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.add('show');
+            overlay.classList.add('show');
+            sidebarOpen = true;
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+            sidebarOpen = false;
+        }
+
+        // Notification Functions
+        function toggleNotifications() {
+            const panel = document.getElementById('notification-panel');
+            const userMenu = document.getElementById('user-menu');
+            
+            // Kullanıcı menüsünü kapat
+            userMenu.classList.add('hidden');
+            userMenuOpen = false;
+            
+            panel.classList.toggle('hidden');
+            notificationPanelOpen = !notificationPanelOpen;
+        }
+
+        function markAllAsRead() {
+            fetch('/customers/api/notifications/mark-all-read/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('notification-panel').classList.add('hidden');
+                    // Bildirim sayısını sıfırla
+                    const badge = document.querySelector('.notification-badge');
+                    if (badge) badge.remove();
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // User Menu Functions
+        function toggleUserMenu() {
+            const menu = document.getElementById('user-menu');
+            const notificationPanel = document.getElementById('notification-panel');
+            
+            // Bildirim panelini kapat
+            notificationPanel.classList.add('hidden');
+            notificationPanelOpen = false;
+            
+            menu.classList.toggle('hidden');
+            userMenuOpen = !userMenuOpen;
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Active navigation link
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
                 }
             });
+
+            // Mobile sidebar
+            const openSidebarBtn = document.getElementById('openSidebar');
+            const closeSidebarBtn = document.getElementById('closeSidebar');
+            
+            if (openSidebarBtn) {
+                openSidebarBtn.addEventListener('click', openSidebar);
+            }
+            
+            if (closeSidebarBtn) {
+                closeSidebarBtn.addEventListener('click', closeSidebar);
+            }
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(event) {
+                const notificationPanel = document.getElementById('notification-panel');
+                const notificationButton = document.getElementById('notification-button');
+                const userMenu = document.getElementById('user-menu');
+                const userMenuButton = document.getElementById('user-menu-button');
+                
+                // Close notification panel
+                if (notificationPanel && notificationButton && 
+                    !notificationPanel.contains(event.target) && 
+                    !notificationButton.contains(event.target)) {
+                    notificationPanel.classList.add('hidden');
+                    notificationPanelOpen = false;
+                }
+                
+                // Close user menu
+                if (userMenu && userMenuButton && 
+                    !userMenu.contains(event.target) && 
+                    !userMenuButton.contains(event.target)) {
+                    userMenu.classList.add('hidden');
+                    userMenuOpen = false;
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(event) {
+                // ESC key closes all dropdowns
+                if (event.key === 'Escape') {
+                    document.getElementById('notification-panel').classList.add('hidden');
+                    document.getElementById('user-menu').classList.add('hidden');
+                    notificationPanelOpen = false;
+                    userMenuOpen = false;
+                }
+                
+                // Ctrl+Alt+P opens POS (if available)
+                if (event.ctrlKey && event.altKey && event.key === 'p') {
+                    const posLink = document.querySelector('a[href*="pos_terminal"]');
+                    if (posLink) {
+                        event.preventDefault();
+                        window.location.href = posLink.href;
+                    }
+                }
+            });
+
+            // Auto-dismiss messages after 5 seconds
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+
+            // Add loading states to buttons
+            const buttons = document.querySelectorAll('button[type="submit"]');
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    if (!this.disabled) {
+                        this.innerHTML = '<span class="loading mr-2"></span>' + this.textContent;
+                        this.disabled = true;
+                        
+                        // Re-enable after 3 seconds (fallback)
+                        setTimeout(() => {
+                            this.disabled = false;
+                            this.innerHTML = this.textContent.replace(/^.*/, this.textContent);
+                        }, 3000);
+                    }
+                });
+            });
+        });
+
+        // Performance Optimizations
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
 
-
-
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
     </script>
 
-    <script>
-function toggleNotifications() {
-    const panel = document.getElementById('notification-panel');
-    panel.classList.toggle('hidden');
-}
-
-function markAllAsRead() {
-    // AJAX ile tüm bildirimleri okundu olarak işaretle
-    fetch('/api/notifications/mark-all-read/', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-            'Content-Type': 'application/json',
-        },
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            document.getElementById('notification-panel').classList.add('hidden');
-            location.reload(); // Sayfayı yenile
-        }
-    });
-}
-
-// Dışarı tıklanınca paneli kapat
-document.addEventListener('click', function(event) {
-    const panel = document.getElementById('notification-panel');
-    const button = document.getElementById('notification-button');
-    
-    if (!panel.contains(event.target) && !button.contains(event.target)) {
-        panel.classList.add('hidden');
-    }
-});
-
-// Bildirim öğelerine hover efekti
-document.addEventListener('DOMContentLoaded', function() {
-    const notificationItems = document.querySelectorAll('.notification-item');
-    notificationItems.forEach(item => {
-        item.style.cursor = 'pointer';
-    });
-});
-</script>
-
-<style>
-.notification-item:hover {
-    background-color: #f9fafb;
-    cursor: pointer;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
-}
-
-.notification-item[data-type="danger"] {
-    border-left: 4px solid #ef4444;
-}
-
-.notification-item[data-type="warning"] {
-    border-left: 4px solid #f59e0b;
-}
-
-.notification-item[data-type="success"] {
-    border-left: 4px solid #10b981;
-}
-
-.notification-item[data-type="info"] {
-    border-left: 4px solid #3b82f6;
-}
-</style>
-
+    <!-- External Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-  
     {% block extra_js %}{% endblock %}
-
 </body>
 </html>

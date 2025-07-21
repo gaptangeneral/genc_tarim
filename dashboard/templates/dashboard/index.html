@@ -50,11 +50,11 @@
             </div>
             
             <div class="text-center">
-                <div class="bg-{{ financial_summary.gross_profit >= 0|yesno:'green,red' }}-100 p-4 rounded-full mx-auto mb-3 w-fit">
-                    <i class="fas fa-chart-line text-{{ financial_summary.gross_profit >= 0|yesno:'green,red' }}-600 text-2xl"></i>
+                <div class="bg-{% if financial_summary.gross_profit >= 0 %}green{% else %}red{% endif %}-100 p-4 rounded-full mx-auto mb-3 w-fit">
+                    <i class="fas fa-chart-line text-{% if financial_summary.gross_profit >= 0 %}green{% else %}red{% endif %}-600 text-2xl"></i>
                 </div>
                 <p class="text-sm text-gray-500">Net Durum</p>
-                <h4 class="text-2xl font-bold text-{{ financial_summary.gross_profit >= 0|yesno:'green,red' }}-600">₺{{ financial_summary.gross_profit|floatformat:2 }}</h4>
+                <h4 class="text-2xl font-bold text-{% if financial_summary.gross_profit >= 0 %}green{% else %}red{% endif %}-600">₺{{ financial_summary.gross_profit|floatformat:2 }}</h4>
             </div>
         </div>
     </div>
@@ -140,7 +140,7 @@
                             {% elif event.days_left == 1 %}
                                 Yarın
                             {% elif event.days_left < 0 %}
-                                {{ event.days_left|add:"-1"|abs }} gün geç
+                                {{ event.days_left|add:"-1"|stringformat:"d"|slice:"1:" }} gün geç
                             {% else %}
                                 {{ event.days_left }} gün kaldı
                             {% endif %}
@@ -165,14 +165,6 @@
         </div>
     </div>
 
-    <!-- Haftalık Gider Trendi -->
-    <div class="bg-white p-6 rounded-xl shadow">
-        <h3 class="text-lg font-semibold text-gray-900 mb-6">Son 7 Gün Gider Trendi</h3>
-        <div class="relative h-64">
-            <canvas id="weeklyExpenseChart"></canvas>
-        </div>
-    </div>
-<div class="space-y-6">
     <!-- Zaman Filtresi -->
     <div class="bg-white p-4 rounded-xl shadow-sm border">
         <div class="flex flex-wrap items-center gap-3">
@@ -340,7 +332,7 @@
         <div class="bg-white p-6 rounded-xl shadow-sm border">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-semibold text-gray-900">Son Eklenen Ürünler</h3>
-                <a href="#" class="text-blue-500 hover:text-blue-600 text-sm font-medium">Tümünü Gör</a>
+                <a href="{% url 'inventory:product_list' %}" class="text-blue-500 hover:text-blue-600 text-sm font-medium">Tümünü Gör</a>
             </div>
             <div class="space-y-3">
                 {% for product in latest_products %}
@@ -368,7 +360,7 @@
         <div class="bg-white p-6 rounded-xl shadow-sm border">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-semibold text-gray-900">Son Servis Kayıtları</h3>
-                <a href="#" class="text-blue-500 hover:text-blue-600 text-sm font-medium">Tümünü Gör</a>
+                <a href="{% url 'service:servicerecord_list' %}" class="text-blue-500 hover:text-blue-600 text-sm font-medium">Tümünü Gör</a>
             </div>
             <div class="space-y-3">
                 {% for service in latest_services %}
@@ -378,7 +370,7 @@
                             <i class="fas fa-tools text-indigo-500"></i>
                         </div>
                         <div>
-                            <p class="font-medium text-gray-900">{{ service.device_type }}</p>
+                            <p class="font-medium text-gray-900">{{ service.machine_brand }} {{ service.machine_model }}</p>
                             <p class="text-sm text-gray-500">{{ service.created_at|date:"d M Y" }}</p>
                         </div>
                     </div>
@@ -460,7 +452,7 @@
         
         // En Çok Kullanılan Parçalar Grafiği
         const topPartsCtx = document.getElementById('topPartsChart');
-        if (topPartsCtx) {
+        if (topPartsCtx && {{ top_parts_labels_json|safe }}.length > 0) {
             new Chart(topPartsCtx, {
                 type: 'doughnut',
                 data: {
@@ -497,7 +489,7 @@
 
         // Günlük Satış Cirosu Grafiği
         const dailySalesCtx = document.getElementById('dailySalesChart');
-        if (dailySalesCtx) {
+        if (dailySalesCtx && {{ daily_sales_labels_json|safe }}.length > 0) {
             new Chart(dailySalesCtx, {
                 type: 'line',
                 data: {
@@ -552,7 +544,7 @@
         
         // En Çok Satan Ürünler Grafiği
         const topProductsCtx = document.getElementById('topProductsChart');
-        if (topProductsCtx) {
+        if (topProductsCtx && {{ top_products_labels_json|safe }}.length > 0) {
             new Chart(topProductsCtx, {
                 type: 'bar',
                 data: {
@@ -595,6 +587,41 @@
                     }
                 }
             });
+        }
+
+        // Hata durumunda boş grafikler için placeholder göster
+        function showEmptyChart(canvasId, message) {
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                const container = canvas.parentElement;
+                
+                container.innerHTML = `
+                    <div class="flex items-center justify-center h-80 text-gray-500">
+                        <div class="text-center">
+                            <i class="fas fa-chart-line text-4xl mb-4"></i>
+                            <p>${message || 'Henüz veri bulunmuyor'}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Veri yoksa placeholder göster
+        if (!{{ daily_service_labels_json|safe }}.length) {
+            showEmptyChart('dailyServiceChart', 'Henüz servis kaydı bulunmuyor');
+        }
+        
+        if (!{{ top_parts_labels_json|safe }}.length) {
+            showEmptyChart('topPartsChart', 'Henüz kullanılan parça bulunmuyor');
+        }
+        
+        if (!{{ daily_sales_labels_json|safe }}.length) {
+            showEmptyChart('dailySalesChart', 'Henüz satış kaydı bulunmuyor');
+        }
+        
+        if (!{{ top_products_labels_json|safe }}.length) {
+            showEmptyChart('topProductsChart', 'Henüz satılan ürün bulunmuyor');
         }
 
     });
