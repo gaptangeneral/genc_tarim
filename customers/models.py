@@ -4,6 +4,8 @@ from django.db import models
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
+from decimal import Decimal
 
 class Customer(models.Model):
     class CustomerType(models.TextChoices):
@@ -100,4 +102,142 @@ class Customer(models.Model):
     class Meta:
         verbose_name = _('Müşteri')
         verbose_name_plural = _('Müşteriler')
+        
+        
+class CreditAccount(models.Model):
+    """Müşteri Cari Hesabı"""
+    customer = models.OneToOneField(
+        'Customer', 
+        on_delete=models.CASCADE, 
+        related_name='credit_account',
+        verbose_name="Müşteri"
+    )
+    credit_limit = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0,
+        verbose_name="Kredi Limiti"
+    )
+    current_balance = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0,
+        verbose_name="Mevcut Bakiye"
+    )
+    is_active = models.BooleanField(default=True, verbose_name="Aktif mi?")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Müşteri Cari Hesabı"
+        verbose_name_plural = "Müşteri Cari Hesapları"
+
+    def __str__(self):
+        return f"{self.customer} - Bakiye: ₺{self.current_balance}"
+
+    @property
+    def available_credit(self):
+        return self.credit_limit - self.current_balance
+
+    def can_purchase(self, amount):
+        return self.available_credit >= amount
+
+class CreditTransaction(models.Model):
+    """Veresiye İşlemleri"""
+    TRANSACTION_TYPES = [
+        ('SALE', 'Satış (Borç)'),
+        ('PAYMENT', 'Ödeme (Alacak)'),
+        ('ADJUSTMENT', 'Düzeltme'),
+        ('SERVICE', 'Servis (Borç)'),
+    ]
+
+    credit_account = models.ForeignKey(
+        CreditAccount, 
+        on_delete=models.CASCADE,
+        related_name='transactions',
+        verbose_name="Cari Hesap"
+    )
+    transaction_type = models.CharField(
+        max_length=20, 
+        choices=TRANSACTION_TYPES,
+        verbose_name="İşlem Tipi"
+    )
+    amount = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        verbose_name="Tutar"
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name="Açıklama"
+    )
+    due_date = models.DateField(
+        null=True, 
+        blank=True,
+        verbose_name="Vade Tarihi"
+    )
+    is_paid = models.BooleanField(default=False, verbose_name="Ödendi mi?")
+    
+    # İlişkili kayıtlar
+    related_sale = models.ForeignKey(
+        'sales.Sale', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        verbose_name="İlişkili Satış"
+    )
+    related_service = models.ForeignKey(
+        'service.ServiceRecord', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        verbose_name="İlişkili Servis"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name="Oluşturan"
+    )
+
+    class Meta:
+        verbose_name = "Veresiye İşlemi"
+        verbose_name_plural = "Veresiye İşlemleri"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.credit_account.customer} - {self.get_transaction_type_display()} - ₺{self.amount}"
+
+    @property
+    def is_overdue(self):
+        if self.due_date and not self.is_paid:
+            return timezone.now().date() > self.due_date
+        return False
+
+    @property
+    def days_until_due(self):
+        if self.due_date and not self.is_paid:
+            delta = self.due_date - timezone.now().date()
+            return delta.days
+        return None
+
+# sales/models.py içine eklenecek ödeme metodu
+class Sale(models.Model):
+    # Mevcut alanlar...
+    
+    PAYMENT_METHOD_CHOICES = [
+        ('CASH', 'Nakit'),
+        ('CREDIT_CARD', 'Kredi Kartı'),
+        ('BANK_TRANSFER', 'Havale/EFT'),
+        ('CREDIT', 'Veresiye'),  # YENİ EKLENEN
+    ]
+    
+    is_credit_sale = models.BooleanField(default=False, verbose_name="Veresiye Satış")
+    credit_due_date = models.DateField(
+        null=True, 
+        blank=True,
+        verbose_name="Vade Tarihi"
+    )
 

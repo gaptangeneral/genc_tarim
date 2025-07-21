@@ -9,7 +9,7 @@
             <!-- Ürün Resmi -->
             <div class="flex-shrink-0">
                 {% if product.image %}
-                    <img class="h-32 w-32 rounded-lg object-cover shadow-sm border" src="{{ product.image.url }}" alt="{{ product.name }}">
+                    <img id="product-image" class="h-32 w-32 rounded-lg object-cover shadow-sm border cursor-pointer hover:shadow-md transition-shadow duration-200" src="{{ product.image.url }}" alt="{{ product.name }}" title="Fotoğrafı büyütmek için tıklayın">
                 {% else %}
                     <div class="h-32 w-32 rounded-lg bg-gray-50 flex items-center justify-center border">
                         <i class="fas fa-box-open text-4xl text-gray-300"></i>
@@ -130,6 +130,27 @@
     </div>
 </div>
 
+<!-- Ürün Fotoğrafı Modal -->
+<div id="image-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden items-center justify-center p-4">
+    <div class="relative max-w-5xl max-h-full">
+        <!-- Modal Kapatma Butonu -->
+        <button id="close-image-modal" class="absolute -top-12 right-0 text-white text-2xl hover:text-gray-300 transition-colors">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <!-- Büyük Fotoğraf -->
+        <div class="relative bg-white rounded-lg shadow-2xl overflow-hidden">
+            <img id="modal-image" src="" alt="{{ product.name }}" class="max-w-full max-h-[80vh] object-contain">
+            
+            <!-- Fotoğraf Bilgisi -->
+            <div class="p-4 bg-white border-t">
+                <h3 class="font-semibold text-gray-900 text-lg">{{ product.name }}</h3>
+                <p class="text-gray-600 text-sm mt-1">{{ product.brand.name|default_if_none:'' }} • {{ product.category.name|default_if_none:'' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Stok Hareketi Ekleme Modalı -->
 <div id="stock-movement-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg">
@@ -158,6 +179,47 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Fotoğraf Modal İşlemleri
+    const imageModal = document.getElementById('image-modal');
+    const productImage = document.getElementById('product-image');
+    const modalImage = document.getElementById('modal-image');
+    const closeImageModal = document.getElementById('close-image-modal');
+
+    if (imageModal && productImage && modalImage) {
+        // Fotoğrafa tıklanınca modal aç
+        productImage.addEventListener('click', () => {
+            modalImage.src = productImage.src;
+            imageModal.classList.remove('hidden');
+            imageModal.classList.add('flex');
+            document.body.style.overflow = 'hidden'; // Sayfanın kaydırılmasını engelle
+        });
+
+        // Modal kapatma fonksiyonu
+        const closeModal = () => {
+            imageModal.classList.remove('flex');
+            imageModal.classList.add('hidden');
+            document.body.style.overflow = ''; // Sayfanın kaydırılmasını tekrar aktif et
+        };
+
+        // Kapatma butonuna tıklanınca
+        closeImageModal.addEventListener('click', closeModal);
+
+        // Modal dışına tıklanınca kapatma
+        imageModal.addEventListener('click', (event) => {
+            if (event.target === imageModal) {
+                closeModal();
+            }
+        });
+
+        // ESC tuşu ile kapatma
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !imageModal.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+    }
+
+    // Stok Hareketi Modal İşlemleri
     const modal = document.getElementById('stock-movement-modal');
     if (modal) {
         const openBtn = document.getElementById('open-modal-btn');
@@ -201,4 +263,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
-{% endblock %}
+{% endblock extra_js %}

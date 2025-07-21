@@ -67,39 +67,75 @@
         <li><h3 class="px-4 mt-2 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Yönetim</h3></li>
         <li><a href="{% url 'dashboard:index' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Pano</span></a></li>
         <li><a href="{% url 'service:servicerecord_list' %}" class="nav-link"><i class="fas fa-tools fa-fw mr-3"></i><span class="text-sm">Servis Yönetimi</span></a></li>
-        <a href="{% url 'service:service_reports' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-    <i class="fas fa-chart-bar mr-2"></i>Servis Raporları
-</a>
+        <li><a href="{% url 'service:service_reports' %}" class="nav-link"><i class="fas fa-chart-bar fa-fw mr-3"></i><span class="text-sm">Servis Raporları</span></a></li>
         <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
+        
+        <!-- YENİ EKLENEN: VERESİYE YÖNETİMİ -->
+        <li><a href="{% url 'customers:credit_account_list' %}" class="nav-link"><i class="fas fa-credit-card fa-fw mr-3"></i><span class="text-sm">Veresiye Yönetimi</span></a></li>
+        
         <li><a href="{% url 'inventory:reports_page' %}" class="nav-link"><i class="fas fa-chart-line fa-fw mr-3"></i><span class="text-sm">Raporlar</span></a></li>
         
         <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Satış Yönetimi</h3></li>
         <li><a href="{% url 'sales:pos_terminal' %}" class="nav-link"><i class="fas fa-cash-register fa-fw mr-3"></i><span class="text-sm">Satış Ekranı</span></a></li>
         <li><a href="{% url 'sales:sale_history_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span></a></li>
 
+        <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Mali İşler</h3></li>
+        <!-- YENİ EKLENEN: GİDER YÖNETİMİ -->
+        <li><a href="{% url 'expenses:expense_list' %}" class="nav-link"><i class="fas fa-money-bill-wave fa-fw mr-3"></i><span class="text-sm">Gider Yönetimi</span></a></li>
+        <li><a href="{% url 'expenses:expense_reports' %}" class="nav-link"><i class="fas fa-chart-pie fa-fw mr-3"></i><span class="text-sm">Gider Raporları</span></a></li>
+        <li><a href="{% url 'expenses:budget_management' %}" class="nav-link"><i class="fas fa-calculator fa-fw mr-3"></i><span class="text-sm">Bütçe Yönetimi</span></a></li>
+        <li><a href="{% url 'expenses:category_list' %}" class="nav-link"><i class="fas fa-tags fa-fw mr-3"></i><span class="text-sm">Gider Kategorileri</span></a></li>
+
         <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Veri Yönetimi</h3></li>
         <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürünler</span></a></li>
         {% if perms.inventory.view_category %}
-        <li><a href="{% url 'inventory:category_list' %}" class="nav-link"><i class="fas fa-sitemap fa-fw mr-3"></i><span class="text-sm">Kategoriler</span></a></li>
+        <li><a href="{% url 'inventory:category_list' %}" class="nav-link"><i class="fas fa-sitemap fa-fw mr-3"></i><span class="text-sm">Ürün Kategorileri</span></a></li>
         {% endif %}
 
         <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Kullanıcı İşlemleri</h3></li>
-        <li><a href="{% url 'accounts:user_add' %}" class="nav-link"><i class="fas fa-users-cog fa-fw mr-3"></i><span class="text-sm">Yeni Kullanıcı Ekle</span></a></li>
+        <li><a href="{% url 'accounts:user_add' %}" class="nav-link"><i class="fas fa-user-plus fa-fw mr-3"></i><span class="text-sm">Yeni Kullanıcı Ekle</span></a></li>
         <li><a href="{% url 'accounts:user_list' %}" class="nav-link"><i class="fas fa-users-cog fa-fw mr-3"></i><span class="text-sm">Kullanıcıları Yönet</span></a></li>
         <li><a href="{% url 'accounts:group_list' %}" class="nav-link"><i class="fas fa-user-shield fa-fw mr-3"></i><span class="text-sm">Gruplar & Yetkiler</span></a></li>
         <li><a href="{% url 'logs:log_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Aktivite Kayıtları</span></a></li>
         <li><a href="{% url 'backups:backup_management' %}" class="nav-link"><i class="fas fa-database fa-fw mr-3"></i><span class="text-sm">Yedekleme</span></a></li>
 
-    
+    {% elif 'Muhasebe' in user.groups.all|join:", " %}
+        <!-- MUHASEBE GRUBU İÇİN MENÜ -->
+        <li><h3 class="px-4 mt-2 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Mali İşler</h3></li>
+        <li><a href="{% url 'customers:credit_account_list' %}" class="nav-link"><i class="fas fa-credit-card fa-fw mr-3"></i><span class="text-sm">Veresiye Yönetimi</span></a></li>
+        <li><a href="{% url 'customers:credit_sales_report' %}" class="nav-link"><i class="fas fa-file-invoice-dollar fa-fw mr-3"></i><span class="text-sm">Veresiye Raporları</span></a></li>
+        <li><a href="{% url 'expenses:expense_list' %}" class="nav-link"><i class="fas fa-money-bill-wave fa-fw mr-3"></i><span class="text-sm">Gider Yönetimi</span></a></li>
+        <li><a href="{% url 'expenses:expense_reports' %}" class="nav-link"><i class="fas fa-chart-pie fa-fw mr-3"></i><span class="text-sm">Gider Raporları</span></a></li>
+        <li><a href="{% url 'expenses:budget_management' %}" class="nav-link"><i class="fas fa-calculator fa-fw mr-3"></i><span class="text-sm">Bütçe Yönetimi</span></a></li>
+        <li><a href="{% url 'sales:sale_history_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span></a></li>
+        <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
+        
+    {% elif 'Satış' in user.groups.all|join:", " %}
+        <!-- SATIŞ GRUBU İÇİN MENÜ -->
+        <li><h3 class="px-4 mt-2 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Satış</h3></li>
+        <li><a href="{% url 'sales:pos_terminal' %}" class="nav-link"><i class="fas fa-cash-register fa-fw mr-3"></i><span class="text-sm">Satış Ekranı</span></a></li>
+        <li><a href="{% url 'sales:sale_history_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span></a></li>
+        <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
+        <li><a href="{% url 'customers:credit_account_list' %}" class="nav-link"><i class="fas fa-credit-card fa-fw mr-3"></i><span class="text-sm">Veresiye Görüntüle</span></a></li>
+        <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürünler</span></a></li>
+        
     {% elif 'Teknisyen' in user.groups.all|join:", " %}
+        <!-- TEKNİSYEN GRUBU İÇİN MENÜ -->
+        <li><h3 class="px-4 mt-2 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Servis</h3></li>
         <li><a href="{% url 'service:technician_dashboard' %}" class="nav-link"><i class="fas fa-user-cog fa-fw mr-3"></i><span class="text-sm">Bana Atanan İşler</span></a></li>
         <li><a href="{% url 'service:servicerecord_list' %}" class="nav-link"><i class="fas fa-tools fa-fw mr-3"></i><span class="text-sm">Tüm Servis Kayıtları</span></a></li>
+        <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
+        <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Yedek Parçalar</span></a></li>
         
     {% else %}
+        <!-- VARSAYILAN MENÜ -->
         <li><a href="{% url 'dashboard:index' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Pano</span></a></li>
+        <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
+        <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürünler</span></a></li>
     {% endif %}
-</ul>
+    </ul>
 </nav>
+
             
             <div class="p-4 border-t border-gray-200">
                 <a href="{% url 'accounts:logout' %}" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
@@ -111,17 +147,98 @@
         
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="bg-white shadow-sm">
-                <div class="flex items-center justify-between px-6 py-4">
-                    <div class="flex items-center">
-                        <button id="openSidebar" class="md:hidden text-gray-600 mr-4">
-                            <i class="fas fa-bars text-xl"></i>
+               <div class="flex items-center justify-between px-6 py-4">
+        <div class="flex items-center">
+            <button id="openSidebar" class="md:hidden text-gray-600 mr-4">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            <h2 class="text-xl font-semibold text-gray-800">{% block page_title %}Panel{% endblock %}</h2>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+            <!-- Bildirim Butonu -->
+            <div class="relative">
+                <button 
+                    id="notification-button" 
+                    class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+                    onclick="toggleNotifications()"
+                >
+                    <i class="fas fa-bell text-xl"></i>
+                    {% if notification_count > 0 %}
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {{ notification_count|default:0 }}
+                    </span>
+                    {% endif %}
+                </button>
+                
+                <!-- Bildirim Paneli -->
+                <div 
+                    id="notification-panel" 
+                    class="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden"
+                >
+                    <div class="p-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900">Bildirimler</h3>
+                            {% if notification_count > 0 %}
+                            <span class="text-sm text-gray-500">{{ notification_count }} bildirim</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="max-h-96 overflow-y-auto">
+                        {% if notifications %}
+                            {% for notification in notifications %}
+                            <div class="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors notification-item" 
+                                 data-type="{{ notification.type }}"
+                                 onclick="window.location.href='{{ notification.link }}'">
+                                <div class="flex items-start space-x-3">
+                                    <div class="flex-shrink-0 mt-1">
+                                        <i class="{{ notification.icon }} text-lg 
+                                           {% if notification.type == 'danger' %}text-red-500
+                                           {% elif notification.type == 'warning' %}text-yellow-500
+                                           {% elif notification.type == 'success' %}text-green-500
+                                           {% else %}text-blue-500{% endif %}"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-900">{{ notification.title }}</p>
+                                        <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                               {% if notification.priority == 'high' %}bg-red-100 text-red-800
+                                               {% elif notification.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                                               {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                            {{ notification.priority|capfirst }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="p-8 text-center text-gray-500">
+                                <i class="fas fa-check-circle text-4xl mb-4 text-green-500"></i>
+                                <p class="text-lg font-medium">Tüm bildirimler temiz!</p>
+                                <p class="text-sm mt-1">Şu anda bekleyen bildiriminiz yok.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if notifications %}
+                    <div class="p-4 border-t border-gray-200">
+                        <button 
+                            class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            onclick="markAllAsRead()"
+                        >
+                            Tümünü Okundu Olarak İşaretle
                         </button>
-                        <h2 class="text-xl font-semibold text-gray-800">{% block page_title %}Panel{% endblock %}</h2>
                     </div>
-                    <div class="flex items-center space-x-4">
-                        {% block top_bar_actions %}{% endblock %}
-                    </div>
+                    {% endif %}
                 </div>
+            </div>
+            
+            {% block top_bar_actions %}{% endblock %}
+        </div>
+    </div>
             </header>
             
             <main class="flex-1 overflow-y-auto p-6 bg-gray-50">
@@ -147,6 +264,19 @@
     {% endif %}
 
     <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+            link.classList.add('active');
+        }
+    });
+});
+</script>
+
+    <script>
         const sidebar = document.getElementById('sidebar');
         const openSidebarBtn = document.getElementById('openSidebar');
         if (openSidebarBtn) {
@@ -158,7 +288,81 @@
                 }
             });
         }
+
+
+
     </script>
+
+    <script>
+function toggleNotifications() {
+    const panel = document.getElementById('notification-panel');
+    panel.classList.toggle('hidden');
+}
+
+function markAllAsRead() {
+    // AJAX ile tüm bildirimleri okundu olarak işaretle
+    fetch('/api/notifications/mark-all-read/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('notification-panel').classList.add('hidden');
+            location.reload(); // Sayfayı yenile
+        }
+    });
+}
+
+// Dışarı tıklanınca paneli kapat
+document.addEventListener('click', function(event) {
+    const panel = document.getElementById('notification-panel');
+    const button = document.getElementById('notification-button');
+    
+    if (!panel.contains(event.target) && !button.contains(event.target)) {
+        panel.classList.add('hidden');
+    }
+});
+
+// Bildirim öğelerine hover efekti
+document.addEventListener('DOMContentLoaded', function() {
+    const notificationItems = document.querySelectorAll('.notification-item');
+    notificationItems.forEach(item => {
+        item.style.cursor = 'pointer';
+    });
+});
+</script>
+
+<style>
+.notification-item:hover {
+    background-color: #f9fafb;
+    cursor: pointer;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.notification-item[data-type="danger"] {
+    border-left: 4px solid #ef4444;
+}
+
+.notification-item[data-type="warning"] {
+    border-left: 4px solid #f59e0b;
+}
+
+.notification-item[data-type="success"] {
+    border-left: 4px solid #10b981;
+}
+
+.notification-item[data-type="info"] {
+    border-left: 4px solid #3b82f6;
+}
+</style>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
