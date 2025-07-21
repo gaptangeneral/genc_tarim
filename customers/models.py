@@ -105,7 +105,7 @@ class Customer(models.Model):
         
         
 class CreditAccount(models.Model):
-    """Müşteri Cari Hesabı"""
+    """Müşteri Cari Hesabı - Geliştirilmiş versiyon"""
     customer = models.OneToOneField(
         'Customer', 
         on_delete=models.CASCADE, 
@@ -124,6 +124,24 @@ class CreditAccount(models.Model):
         default=0,
         verbose_name="Mevcut Bakiye"
     )
+    
+    # YENİ ALANLAR
+    default_payment_days = models.PositiveIntegerField(
+        default=30,
+        verbose_name="Varsayılan Vade Süresi (Gün)",
+        help_text="Yeni borçlar için varsayılan vade süresi"
+    )
+    payment_terms = models.TextField(
+        blank=True,
+        verbose_name="Ödeme Koşulları",
+        help_text="Özel ödeme koşulları ve anlaşmalar"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Cari Hesap Notları",
+        help_text="Bu müşterinin cari hesabı hakkında özel notlar"
+    )
+    
     is_active = models.BooleanField(default=True, verbose_name="Aktif mi?")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -142,6 +160,26 @@ class CreditAccount(models.Model):
     def can_purchase(self, amount):
         return self.available_credit >= amount
 
+    def get_overdue_amount(self):
+        """Vadesi geçmiş toplam tutar"""
+        overdue_transactions = self.transactions.filter(
+            transaction_type='SALE',
+            is_paid=False,
+            due_date__lt=timezone.now().date()
+        )
+        return overdue_transactions.aggregate(
+            total=models.Sum('amount')
+        )['total'] or Decimal('0.0')
+
+    def get_upcoming_payments(self, days=30):
+        """Yaklaşan ödemeler"""
+        upcoming_date = timezone.now().date() + timezone.timedelta(days=days)
+        return self.transactions.filter(
+            transaction_type='SALE',
+            is_paid=False,
+            due_date__lte=upcoming_date,
+            due_date__gte=timezone.now().date()
+        ).order_by('due_date')
 class CreditTransaction(models.Model):
     """Veresiye İşlemleri"""
     TRANSACTION_TYPES = [

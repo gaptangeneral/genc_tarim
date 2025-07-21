@@ -1,0 +1,84 @@
+<!-- customers/templates/customers/delete_credit_transaction.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow max-w-2xl mx-auto text-center">
+    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+        <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+    </div>
+    
+    <h1 class="text-2xl font-semibold text-gray-900 mb-4">{{ page_title }}</h1>
+    
+    <div class="bg-gray-50 p-4 rounded-lg mb-6 text-left">
+        <h3 class="font-medium text-gray-900 mb-2">Silinecek İşlem Detayları:</h3>
+        <div class="space-y-2 text-sm text-gray-700">
+            <div class="flex justify-between">
+                <span>Müşteri:</span>
+                <span class="font-medium">{{ transaction.credit_account.customer }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span>İşlem Tipi:</span>
+                <span class="font-medium">{{ transaction.get_transaction_type_display }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Tutar:</span>
+                <span class="font-medium">₺{{ transaction.amount|floatformat:2 }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Tarih:</span>
+                <span class="font-medium">{{ transaction.created_at|date:"d.m.Y H:i" }}</span>
+            </div>
+            {% if transaction.due_date %}
+            <div class="flex justify-between">
+                <span>Vade Tarihi:</span>
+                <span class="font-medium">{{ transaction.due_date|date:"d.m.Y" }}</span>
+            </div>
+            {% endif %}
+            {% if transaction.description %}
+            <div>
+                <span>Açıklama:</span>
+                <p class="font-medium mt-1">{{ transaction.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-yellow-600"></i>
+            </div>
+            <div class="ml-3 text-left">
+                <h3 class="text-sm font-medium text-yellow-800">Bu işlem silindiğinde:</h3>
+                <ul class="text-sm text-yellow-700 mt-2 space-y-1">
+                    {% if transaction.transaction_type == 'SALE' and not transaction.is_paid %}
+                    <li>• Müşterinin borç bakiyesi ₺{{ transaction.amount|floatformat:2 }} azalacak</li>
+                    {% elif transaction.transaction_type == 'PAYMENT' %}
+                    <li>• Müşterinin borç bakiyesi ₺{{ transaction.amount|floatformat:2 }} artacak</li>
+                    {% endif %}
+                    <li>• Bu işlem kalıcı olarak kaybolacak</li>
+                    <li>• İşlemle ilgili tüm veriler silinecek</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <p class="text-gray-600 mb-8">
+        <strong>Bu işlem geri alınamaz.</strong> Veresiye işlemini silmek istediğinizden emin misiniz?
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="flex justify-center gap-4">
+            <a href="{% url 'customers:credit_account_detail' customer_id=transaction.credit_account.customer.id %}" 
+               class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-lg transition-colors">
+                İptal
+            </a>
+            <button type="submit" 
+                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors">
+                Evet, İşlemi Sil
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %>

@@ -1,5 +1,7 @@
 from django import forms
 from .models import Customer
+from .models import Customer, CreditAccount, CreditTransaction
+
 
 class CustomerForm(forms.ModelForm):
     class Meta:
@@ -40,6 +42,75 @@ class QuickCustomerForm(forms.ModelForm):
         original_style = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
         for field_name, field in self.fields.items():
             field.widget.attrs.update({'class': original_style})
+            
+class CreditAccountEditForm(forms.ModelForm):
+    """Cari hesap bilgilerini düzenleme formu"""
+    default_payment_days = forms.IntegerField(
+        label="Varsayılan Vade Süresi (Gün)",
+        initial=30,
+        min_value=1,
+        max_value=365,
+        help_text="Yeni borçlar için varsayılan vade süresi",
+        widget=forms.NumberInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+        })
+    )
+    
+    payment_terms = forms.CharField(
+        label="Ödeme Koşulları",
+        required=False,
+        help_text="Örn: 30 gün vadeli, aylık tahsilat, vs.",
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'placeholder': 'Ödeme koşullarını detaylı olarak yazın...'
+        })
+    )
+    
+    notes = forms.CharField(
+        label="Cari Hesap Notları",
+        required=False,
+        help_text="Bu müşterinin cari hesabı hakkında özel notlar",
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'placeholder': 'Özel notlar ve hatırlatmalar...'
+        })
+    )
+
+    class Meta:
+        model = CreditAccount
+        fields = ['credit_limit', 'is_active', 'default_payment_days', 'payment_terms', 'notes']
+        widgets = {
+            'credit_limit': forms.NumberInput(attrs={
+                'step': '0.01',
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+            })
+        }
+        
+# YENİ EKLENEN: Veresiye İşlem Düzenleme Formu        
+class CreditTransactionEditForm(forms.ModelForm):
+    """Veresiye işleminin vade tarihini ve açıklamasını düzenlemek için"""
+    class Meta:
+        model = CreditTransaction
+        fields = ['due_date', 'description', 'is_paid']
+        widgets = {
+            'due_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }),
+            'description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }),
+            'is_paid': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+            })
+        }
+
             
 from django import forms
 from .models import CreditAccount, CreditTransaction

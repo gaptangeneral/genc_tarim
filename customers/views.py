@@ -402,3 +402,95 @@ def create_credit_account_ajax(request):
             'success': False,
             'message': f'Bir hata oluştu: {str(e)}'
         })
+        
+@login_required
+@permission_required('customers.change_creditaccount')
+def edit_credit_account(request, customer_id):
+    """Cari hesap ayarlarını düzenleme"""
+    customer = get_object_or_404(Customer, id=customer_id)
+    credit_account, created = CreditAccount.objects.get_or_create(
+        customer=customer,
+        defaults={
+            'credit_limit': 0, 
+            'current_balance': 0,
+            'default_payment_days': 30
+        }
+    )
+    
+    if request.method == 'POST':
+        form = CreditAccountEditForm(request.POST, instance=credit_account)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'{customer} müşterisinin cari hesap ayarları güncellendi.')
+            return redirect('customers:credit_account_detail', customer_id=customer_id)
+    else:
+        form = CreditAccountEditForm(instance=credit_account)
+    
+    context = {
+        'form': form,
+        'customer': customer,
+        'credit_account': credit_account,
+        'page_title': f'{customer} - Cari Hesap Ayarları'
+    }
+    return render(request, 'customers/edit_credit_account.html', context)
+
+@login_required
+@permission_required('customers.change_credittransaction')
+def edit_credit_transaction(request, transaction_id):
+    """Veresiye işlemini düzenleme"""
+    transaction = get_object_or_404(CreditTransaction, id=transaction_id)
+    
+    if request.method == 'POST':
+        form = CreditTransactionEditForm(request.POST, instance=transaction)
+        if form.is_valid():
+            old_is_paid = transaction.is_paid
+            form.save()
+            
+            # Ödeme durumu değiştiyse bakiyeyi güncelle
+            if old_is_paid != form.cleaned_data['is_paid']:
+                if form.cleaned_data['is_paid']:
+                    # Ödendi olarak işaretlendi
+                    transaction.credit_account.current_balance -= transaction.amount
+                else:
+                    # Ödenmedi olarak işaretlendi  
+                    transaction.credit_account.current_balance += transaction.amount
+                transaction.credit_account.save()
+            
+            messages.success(request, 'Veresiye işlemi güncellendi.')
+            return redirect('customers:credit_account_detail', 
+                          customer_id=transaction.credit_account.customer.id)
+    else:
+        form = CreditTransactionEditForm(instance=transaction)
+    
+    context = {
+        'form': form,
+        'transaction': transaction,
+        'page_title': f'Veresiye İşlemi Düzenle - {transaction.credit_account.customer}'
+    }
+    return render(request, 'customers/edit_credit_transaction.html', context)
+
+@login_required
+@permission_required('customers.delete_credittransaction')
+def delete_credit_transaction(request, transaction_id):
+    """Veresiye işlemini silme"""
+    transaction = get_object_or_404(CreditTransaction, id=transaction_id)
+    customer_id = transaction.credit_account.customer.id
+    
+    if request.method == 'POST':
+        # Bakiyeyi güncelle
+        if transaction.transaction_type == 'SALE' and not transaction.is_paid:
+            transaction.credit_account.current_balance -= transaction.amount
+        elif transaction.transaction_type == 'PAYMENT':
+            transaction.credit_account.current_balance += transaction.amount
+        
+        transaction.credit_account.save()
+        transaction.delete()
+        
+        messages.success(request, 'Veresiye işlemi başarıyla silindi.')
+        return redirect('customers:credit_account_detail', customer_id=customer_id)
+    
+    context = {
+        'transaction': transaction,
+        'page_title': 'Veresiye İşlemi Sil'
+    }
+    return render(request, 'customers/delete_credit_transaction.html', context)

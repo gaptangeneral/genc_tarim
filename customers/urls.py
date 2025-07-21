@@ -1,3 +1,5 @@
+# customers/urls.py - GÜNCELLENMİŞ VERSİYON
+
 from django.urls import path
 from .views import (
     CustomerListView,
@@ -7,7 +9,6 @@ from .views import (
     add_customer_ajax,
 )
 from . import views
-
 
 app_name = 'customers'
 
@@ -23,6 +24,14 @@ urlpatterns = [
     path('credit/<int:customer_id>/', views.credit_account_detail, name='credit_account_detail'),
     path('credit/<int:customer_id>/payment/', views.add_payment, name='add_payment'),
     path('credit/<int:customer_id>/update-limit/', views.update_credit_limit, name='update_credit_limit'),
+    
+    # YENİ EKLENEN: Cari hesap düzenleme
+    path('credit/<int:customer_id>/edit/', views.edit_credit_account, name='edit_credit_account'),
+    
+    # YENİ EKLENEN: Veresiye işlem düzenleme  
+    path('credit/transaction/<int:transaction_id>/edit/', views.edit_credit_transaction, name='edit_credit_transaction'),
+    path('credit/transaction/<int:transaction_id>/delete/', views.delete_credit_transaction, name='delete_credit_transaction'),
+    
     path('credit/reports/', views.credit_sales_report, name='credit_sales_report'),
     
     # AJAX Endpoints
