@@ -1,4 +1,4 @@
-<!-- customers/templates/customers/credit_account_detail.html -->
+<!-- customers/templates/customers/credit_account_detail.html - TAMAMLANMIŞ VERSİYON -->
 {% extends 'base.html' %}
 
 {% block content %}
@@ -10,7 +10,12 @@
                 <h1 class="text-2xl font-bold text-gray-800">{{ customer.get_display_name }}</h1>
                 <p class="text-gray-600 mt-1">{{ customer.phone_number }} • {{ customer.email|default:"E-posta yok" }}</p>
             </div>
-            <div class="text-right">
+            <div class="flex items-center gap-3">
+                <!-- Cari Hesap Ayarları Butonu -->
+                <a href="{% url 'customers:edit_credit_account' customer_id=customer.id %}" 
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                    <i class="fas fa-cog mr-2"></i>Cari Ayarları
+                </a>
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
                     {% if summary.total_debt > 0 %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %}">
                     {% if summary.total_debt > 0 %}Borçlu{% else %}Temiz{% endif %}
@@ -128,6 +133,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tutar</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vade</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">İşlemler</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -168,10 +174,22 @@
                                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Tamamlandı</span>
                                     {% endif %}
                                 </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <a href="{% url 'customers:edit_credit_transaction' transaction_id=transaction.id %}" 
+                                           class="text-blue-600 hover:text-blue-800 text-xs" title="Düzenle">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'customers:delete_credit_transaction' transaction_id=transaction.id %}" 
+                                           class="text-red-600 hover:text-red-800 text-xs" title="Sil">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    </div>
+                                </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="px-6 py-8 text-center text-gray-500">Henüz işlem geçmişi bulunmuyor.</td>
+                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">Henüz işlem geçmişi bulunmuyor.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -205,63 +223,128 @@
         </div>
 
         <!-- Yan Panel -->
-        <div class="space-y-6">
-            <!-- Vadesi Yaklaşan Ödemeler -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Hesap Durumu -->
             <div class="bg-white p-6 rounded-xl shadow">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Vadesi Yaklaşan Ödemeler</h3>
-                <div class="space-y-3">
-                    {% for payment in upcoming_payments %}
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">₺{{ payment.amount|floatformat:2 }}</p>
-                            <p class="text-xs text-gray-500">{{ payment.due_date|date:"d.m.Y" }}</p>
-                        </div>
-                        <div class="text-right">
-                            {% if payment.is_overdue %}
-                                <span class="text-xs text-red-600 font-medium">{{ payment.days_until_due|add:"-1"|abs }} gün geç</span>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Hesap Durumu</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Hesap Açılış Tarihi:</span>
+                        <span class="font-medium">{{ credit_account.created_at|date:"d.m.Y" }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Son İşlem:</span>
+                        <span class="font-medium">
+                            {% if transactions %}
+                                {{ transactions.0.created_at|date:"d.m.Y" }}
                             {% else %}
-                                <span class="text-xs text-yellow-600 font-medium">{{ payment.days_until_due }} gün kaldı</span>
+                                -
                             {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Kredi Kullanım Oranı:</span>
+                        <span class="font-medium text-{% if summary.usage_percentage > 80 %}red{% elif summary.usage_percentage > 60 %}yellow{% else %}green{% endif %}-600">
+                            {{ summary.usage_percentage|floatformat:1 }}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Son 5 İşlem -->
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Son İşlemler</h3>
+                <div class="space-y-3">
+                    {% for transaction in transactions|slice:":5" %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            {% if transaction.transaction_type == 'SALE' %}
+                                <i class="fas fa-shopping-cart text-red-500 mr-2"></i>
+                            {% elif transaction.transaction_type == 'PAYMENT' %}
+                                <i class="fas fa-money-bill-wave text-green-500 mr-2"></i>
+                            {% else %}
+                                <i class="fas fa-edit text-blue-500 mr-2"></i>
+                            {% endif %}
+                            <div>
+                                <p class="text-sm font-medium">{{ transaction.get_transaction_type_display }}</p>
+                                <p class="text-xs text-gray-500">{{ transaction.created_at|date:"d.m.Y" }}</p>
+                            </div>
                         </div>
+                        <span class="text-sm font-medium {% if transaction.transaction_type == 'SALE' %}text-red-600{% else %}text-green-600{% endif %}">
+                            {% if transaction.transaction_type == 'SALE' %}+{% else %}-{% endif %}₺{{ transaction.amount|floatformat:2 }}
+                        </span>
                     </div>
                     {% empty %}
-                    <p class="text-sm text-gray-500 text-center py-4">Vadesi yaklaşan ödeme bulunmuyor.</p>
+                    <p class="text-center text-gray-500 text-sm">Henüz işlem yok</p>
                     {% endfor %}
                 </div>
             </div>
 
-            <!-- Müşteri Özet Bilgileri -->
+            <!-- Vadesi Yaklaşan Ödemeler -->
+            {% if upcoming_payments %}
             <div class="bg-white p-6 rounded-xl shadow">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Müşteri Bilgileri</h3>
-                <dl class="space-y-3 text-sm">
-                    <div>
-                        <dt class="font-medium text-gray-500">Müşteri Tipi</dt>
-                        <dd class="mt-1 text-gray-900">{{ customer.get_customer_type_display }}</dd>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Vadesi Yaklaşan Ödemeler</h3>
+                <div class="space-y-3">
+                    {% for payment in upcoming_payments %}
+                    <div class="p-3 border border-orange-200 rounded-lg bg-orange-50">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">₺{{ payment.amount|floatformat:2 }}</p>
+                                <p class="text-xs text-gray-600">Vade: {{ payment.due_date|date:"d.m.Y" }}</p>
+                            </div>
+                            <span class="text-xs px-2 py-1 bg-orange-100 text-orange-800 rounded-full">
+                                {{ payment.days_until_due }} gün
+                            </span>
+                        </div>
                     </div>
-                    {% if customer.customer_type == 'INDIVIDUAL' %}
-                    <div>
-                        <dt class="font-medium text-gray-500">T.C. Kimlik No</dt>
-                        <dd class="mt-1 text-gray-900">{{ customer.tckn|default:"-" }}</dd>
-                    </div>
-                    {% else %}
-                    <div>
-                        <dt class="font-medium text-gray-500">Vergi Dairesi</dt>
-                        <dd class="mt-1 text-gray-900">{{ customer.tax_office|default:"-" }}</dd>
-                    </div>
-                    <div>
-                        <dt class="font-medium text-gray-500">Vergi No</dt>
-                        <dd class="mt-1 text-gray-900">{{ customer.tax_number|default:"-" }}</dd>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Hızlı Notlar -->
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Müşteri Notları</h3>
+                {% if customer.notes %}
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <p class="text-sm text-gray-700">{{ customer.notes }}</p>
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500 italic">Henüz not eklenmemiş</p>
+                {% endif %}
+                <a href="{% url 'customers:customer_update' pk=customer.id %}" 
+                   class="inline-flex items-center mt-3 text-blue-600 hover:text-blue-800 text-sm">
+                    <i class="fas fa-edit mr-1"></i>Not Düzenle
+                </a>
+            </div>
+
+            <!-- İletişim Bilgileri -->
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">İletişim</h3>
+                <div class="space-y-3">
+                    {% if customer.phone_number %}
+                    <div class="flex items-center">
+                        <i class="fas fa-phone text-gray-400 mr-3"></i>
+                        <a href="tel:{{ customer.phone_number }}" class="text-blue-600 hover:text-blue-800">
+                            {{ customer.phone_number }}
+                        </a>
                     </div>
                     {% endif %}
-                    <div>
-                        <dt class="font-medium text-gray-500">Adres</dt>
-                        <dd class="mt-1 text-gray-900">{{ customer.address|default:"-" }}</dd>
+                    {% if customer.email %}
+                    <div class="flex items-center">
+                        <i class="fas fa-envelope text-gray-400 mr-3"></i>
+                        <a href="mailto:{{ customer.email }}" class="text-blue-600 hover:text-blue-800">
+                            {{ customer.email }}
+                        </a>
                     </div>
-                    <div>
-                        <dt class="font-medium text-gray-500">Kayıt Tarihi</dt>
-                        <dd class="mt-1 text-gray-900">{{ customer.created_at|date:"d.m.Y" }}</dd>
+                    {% endif %}
+                    {% if customer.address %}
+                    <div class="flex items-start">
+                        <i class="fas fa-map-marker-alt text-gray-400 mr-3 mt-1"></i>
+                        <span class="text-gray-700 text-sm">{{ customer.address }}</span>
                     </div>
-                </dl>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
