@@ -360,7 +360,7 @@ class ServiceRecordDetailView(LoginRequiredMixin, DetailView):
 
         # HESAPLAMA MANTIĞI
         subtotal = parts_total + labor_cost  # Ara Toplam
-        kdv_amount = subtotal * (kdv_rate / 100)  # KDV Tutarı
+        kdv_amount = subtotal * (Decimal(kdv_rate) / Decimal('100'))  # KDV Tutarı
         grand_total = subtotal + kdv_amount  # Genel Toplam
 
         context['page_title'] = f"Servis Detayı #{str(self.object.service_id)[:8]}"

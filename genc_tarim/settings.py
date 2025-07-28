@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     'logs.apps.LogsConfig',
     'backups.apps.BackupsConfig',
     'sales.apps.SalesConfig',
-    'expenses.apps.ExpensesConfig',
 ]
 
 MIDDLEWARE = [

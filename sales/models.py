@@ -19,9 +19,7 @@ class TaxRate(models.Model):
         
 class Sale(models.Model):
     STATUS_CHOICES = [('DRAFT', 'Taslak'), ('COMPLETED', 'Tamamlandı'), ('CANCELLED', 'İptal Edildi')]
-    PAYMENT_METHOD_CHOICES = [('CASH', 'Nakit'), ('CREDIT_CARD', 'Kredi Kartı'), ('BANK_TRANSFER', 'Havale/EFT'),('CREDIT', 'Veresiye'),]
-    is_credit_sale = models.BooleanField(default=False)
-    credit_due_date = models.DateField(null=True, blank=True)
+    PAYMENT_METHOD_CHOICES = [('CASH', 'Nakit'), ('CREDIT_CARD', 'Kredi Kartı'), ('BANK_TRANSFER', 'Havale/EFT')]
 
     sale_date = models.DateTimeField(default=timezone.now, verbose_name="Satış Tarihi")
     customer = models.ForeignKey('customers.Customer', on_delete=models.PROTECT, verbose_name="Müşteri")
