@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.contrib.messages.views import SuccessMessageMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.contrib import messages
@@ -9,7 +10,8 @@ from django.db.models import Q, Sum, Count
 from django.utils import timezone
 from datetime import timedelta, date
 from decimal import Decimal
-
+from django.views.generic import TemplateView
+from datetime import timedelta
 from .models import CreditAccount, CreditTransaction
 from .forms import CreditAccountForm, CreditTransactionForm, PaymentForm
 from customers.models import Customer
@@ -304,3 +306,276 @@ def ajax_customer_credit_info(request):
             
     except Customer.DoesNotExist:
         return JsonResponse({'error': 'Müşteri bulunamadı'}, status=404)
+    
+    
+@login_required
+def ajax_create_transaction(request):
+    """AJAX ile yeni hareket kaydet"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            account_id = request.POST.get('account_id')
+            transaction_type = request.POST.get('transaction_type')
+            amount = Decimal(request.POST.get('amount', '0'))
+            description = request.POST.get('description', '')
+            due_date = request.POST.get('due_date')
+            
+            account = get_object_or_404(CreditAccount, pk=account_id)
+            
+            # Düzeltme işlemi için negatif tutarları da kabul et
+            if transaction_type == 'ADJUSTMENT':
+                # Tutar olduğu gibi kaydedilir (pozitif veya negatif olabilir)
+                pass
+            elif transaction_type == 'PAYMENT':
+                # Ödeme her zaman pozitif olmalı
+                amount = abs(amount)
+            
+            # Vade tarihi formatı
+            due_date_obj = None
+            if due_date:
+                try:
+                    due_date_obj = timezone.datetime.strptime(due_date, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+            
+            # Hareket oluştur
+            transaction = CreditTransaction.objects.create(
+                credit_account=account,
+                transaction_type=transaction_type,
+                amount=amount,
+                description=description,
+                due_date=due_date_obj,
+                created_by=request.user,
+                is_paid=(transaction_type == 'PAYMENT'),
+                payment_date=timezone.now() if transaction_type == 'PAYMENT' else None
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'{transaction.get_transaction_type_display()} başarıyla kaydedildi.',
+                'new_balance': float(account.current_balance),
+                'transaction_id': transaction.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Hata: {str(e)}'
+            })
+    
+    return JsonResponse({'success': False, 'message': 'Geçersiz istek'})
+
+
+def ajax_customer_credit_info(request):
+    """Müşterinin cari hesap bilgilerini AJAX ile getir"""
+    customer_id = request.GET.get('customer_id')
+    
+    if not customer_id:
+        return JsonResponse({'error': 'Müşteri ID gerekli'}, status=400)
+    
+    try:
+        customer = Customer.objects.get(pk=customer_id)
+        
+        if hasattr(customer, 'credit_account'):
+            account = customer.credit_account
+            return JsonResponse({
+                'has_account': True,
+                'current_balance': float(account.current_balance),
+                'credit_limit': float(account.credit_limit),
+                'available_credit': float(account.available_credit),
+                'is_over_limit': account.is_over_limit,
+                'is_blocked': account.is_blocked,
+            })
+        else:
+            return JsonResponse({
+                'has_account': False,
+                'current_balance': 0,
+                'credit_limit': 0,
+                'available_credit': 0,
+                'is_over_limit': False,
+                'is_blocked': False
+            })
+            
+    except Customer.DoesNotExist:
+        return JsonResponse({'error': 'Müşteri bulunamadı'}, status=404)
+    
+    
+class CreditAccountReportsView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    """Cari hesap raporları sayfası"""
+    template_name = 'current_accounts/account_reports.html'
+    permission_required = 'current_accounts.view_creditaccount'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Cari Hesap Raporları"
+        
+        # Rapor filtreleri
+        report_type = self.request.GET.get('report_type', 'summary')
+        start_date = self.request.GET.get('start_date')
+        end_date = self.request.GET.get('end_date')
+        customer_type = self.request.GET.get('customer_type')
+        
+        # Temel veriler
+        accounts_queryset = CreditAccount.objects.select_related('customer').all()
+        
+        # Filtreler
+        if customer_type:
+            accounts_queryset = accounts_queryset.filter(customer__customer_type=customer_type)
+        
+        context['accounts'] = accounts_queryset
+        
+        # Özet istatistikler
+        today = timezone.now().date()
+        
+        # Toplam alacaklar (negatif bakiyeler)
+        total_receivables = accounts_queryset.filter(current_balance__lt=0).aggregate(
+            total=Sum('current_balance')
+        )['total'] or 0
+        total_receivables = abs(total_receivables)
+        
+        # Vadesi geçen borçlar
+        overdue_transactions = CreditTransaction.objects.filter(
+            transaction_type='SALE',
+            is_paid=False,
+            due_date__lt=today
+        )
+        if start_date:
+            overdue_transactions = overdue_transactions.filter(created_at__gte=start_date)
+        if end_date:
+            overdue_transactions = overdue_transactions.filter(created_at__lte=end_date)
+            
+        overdue_amount = overdue_transactions.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        overdue_amount = abs(overdue_amount)
+        
+        # 30 gün içinde vadesi gelecek
+        upcoming_transactions = CreditTransaction.objects.filter(
+            transaction_type='SALE',
+            is_paid=False,
+            due_date__gte=today,
+            due_date__lte=today + timedelta(days=30)
+        )
+        upcoming_amount = upcoming_transactions.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        upcoming_amount = abs(upcoming_amount)
+        
+        # Yaşlandırma analizi
+        aging_data = {
+            'current': 0,  # Vadesi gelmemiş
+            'days_1_30': 0,  # 1-30 gün gecikmiş
+            'days_31_60': 0,  # 31-60 gün gecikmiş
+            'days_over_60': 0,  # 60+ gün gecikmiş
+        }
+        
+        # Vadesi geçmiş işlemleri yaşlarına göre kategorize et
+        for transaction in overdue_transactions:
+            if transaction.due_date:
+                days_overdue = (today - transaction.due_date).days
+                amount = abs(transaction.amount)
+                
+                if days_overdue <= 30:
+                    aging_data['days_1_30'] += amount
+                elif days_overdue <= 60:
+                    aging_data['days_31_60'] += amount
+                else:
+                    aging_data['days_over_60'] += amount
+        
+        # Vadesi gelmemiş işlemler
+        current_transactions = CreditTransaction.objects.filter(
+            transaction_type='SALE',
+            is_paid=False,
+            due_date__gte=today
+        )
+        aging_data['current'] = abs(current_transactions.aggregate(
+            total=Sum('amount')
+        )['total'] or 0)
+        
+        context.update({
+            'total_receivables': total_receivables,
+            'overdue_amount': overdue_amount,
+            'upcoming_amount': upcoming_amount,
+            'aging': aging_data,
+            'report_type': report_type,
+        })
+        
+        return context
+    
+@login_required
+def export_accounts_excel(request):
+    """Cari hesapları Excel'e aktar"""
+    import openpyxl
+    from django.http import HttpResponse
+    from openpyxl.styles import Font, PatternFill
+    
+    # Workbook oluştur
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Cari Hesaplar"
+    
+    # Başlık satırı
+    headers = [
+        'Müşteri Adı', 
+        'Müşteri Tipi', 
+        'Güncel Bakiye (₺)', 
+        'Kredi Limiti (₺)', 
+        'Kullanılabilir Kredi (₺)',
+        'Durum',
+        'Oluşturma Tarihi',
+        'Son Güncelleme'
+    ]
+    
+    # Başlık stilini ayarla
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+    
+    # Veri satırları
+    accounts = CreditAccount.objects.select_related('customer').all()
+    
+    for row, account in enumerate(accounts, 2):
+        ws.cell(row=row, column=1, value=str(account.customer))
+        ws.cell(row=row, column=2, value=account.customer.get_customer_type_display())
+        ws.cell(row=row, column=3, value=float(account.current_balance))
+        ws.cell(row=row, column=4, value=float(account.credit_limit))
+        ws.cell(row=row, column=5, value=float(account.available_credit))
+        
+        # Durum
+        if account.is_blocked:
+            status = "Bloke"
+        elif account.is_over_limit:
+            status = "Limit Aştı"
+        elif account.is_active:
+            status = "Aktif"
+        else:
+            status = "Pasif"
+        
+        ws.cell(row=row, column=6, value=status)
+        ws.cell(row=row, column=7, value=account.created_at.strftime('%d.%m.%Y %H:%M'))
+        ws.cell(row=row, column=8, value=account.updated_at.strftime('%d.%m.%Y %H:%M'))
+    
+    # Sütun genişliklerini ayarla
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # HTTP response olarak döndür
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=cari_hesaplar.xlsx'
+    
+    wb.save(response)
+    return response

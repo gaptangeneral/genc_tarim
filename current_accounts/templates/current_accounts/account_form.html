@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-xl shadow p-6">
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">{{ page_title }}</h3>
+            <p class="text-gray-600 text-sm mt-1">
+                {% if object %}
+                    Mevcut cari hesap bilgilerini güncelleyin.
+                {% else %}
+                    Yeni müşteri için cari hesap oluşturun.
+                {% endif %}
+            </p>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Müşteri Seçimi -->
+            <div>
+                <label for="{{ form.customer.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ form.customer.label }}
+                </label>
+                {{ form.customer }}
+                {% if form.customer.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.customer.errors.0 }}</p>
+                {% endif %}
+                {% if not object %}
+                    <p class="mt-1 text-xs text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Sadece cari hesabı olmayan müşteriler listelenmektedir.
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Kredi Limiti -->
+            <div>
+                <label for="{{ form.credit_limit.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ form.credit_limit.label }}
+                </label>
+                {{ form.credit_limit }}
+                {% if form.credit_limit.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.credit_limit.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Müşterinin kullanabileceği maksimum kredi tutarı
+                </p>
+            </div>
+
+            <!-- Aktif Durumu -->
+            <div>
+                <div class="flex items-center">
+                    {{ form.is_active }}
+                    <label for="{{ form.is_active.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700">
+                        {{ form.is_active.label }}
+                    </label>
+                </div>
+                {% if form.is_active.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.is_active.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Pasif hesaplar veresiye satış yapamaz
+                </p>
+            </div>
+
+            <!-- Mevcut Bakiye (Sadece düzenleme modunda) -->
+            {% if object %}
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="text-sm font-medium text-gray-700 mb-2">Mevcut Durum</h4>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-600">Güncel Bakiye:</span>
+                        <span class="font-bold {% if object.current_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            ₺{{ object.current_balance|floatformat:2 }}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Kullanılabilir Kredi:</span>
+                        <span class="font-bold text-blue-600">
+                            ₺{{ object.available_credit|floatformat:2 }}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Durum:</span>
+                        {% if object.is_blocked %}
+                            <span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Bloke</span>
+                        {% elif object.is_over_limit %}
+                            <span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">Limit Aştı</span>
+                        {% elif object.is_active %}
+                            <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Aktif</span>
+                        {% else %}
+                            <span class="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">Pasif</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Oluşturma:</span>
+                        <span class="text-gray-800">{{ object.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Form Hataları -->
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex">
+                        <i class="fas fa-exclamation-triangle text-red-400 mr-2 mt-0.5"></i>
+                        <div class="text-sm text-red-700">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Butonlar -->
+            <div class="flex justify-end space-x-3 pt-6 border-t">
+                <a href="{% url 'current_accounts:account_list' %}" 
+                   class="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">
+                    <i class="fas fa-times mr-2"></i>İptal
+                </a>
+                <button type="submit" 
+                        class="px-4 py-2 bg-primary hover:bg-dark text-white rounded-lg transition-colors">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if object %}Güncelle{% else %}Oluştur{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

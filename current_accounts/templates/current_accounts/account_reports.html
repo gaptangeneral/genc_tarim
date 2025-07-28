@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Başlık -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Cari Hesap Raporları</h1>
+            <p class="text-gray-600">Detaylı cari hesap analizleri ve raporları</p>
+        </div>
+        <div class="flex space-x-2">
+            <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-file-excel mr-2"></i>Excel'e Aktar
+            </button>
+            <button onclick="printReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-print mr-2"></i>Yazdır
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtre ve Özet Kartları -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Filtre Kartı -->
+        <div class="bg-white p-6 rounded-xl shadow">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Filtreler</h3>
+            <form method="get" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Rapor Tipi</label>
+                    <select name="report_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="summary">Özet Rapor</option>
+                        <option value="detailed">Detaylı Rapor</option>
+                        <option value="aging">Yaşlandırma Raporu</option>
+                        <option value="overdue">Vadesi Geçen Borçlar</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tarih Aralığı</label>
+                    <input type="date" name="start_date" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
+                    <input type="date" name="end_date" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Müşteri Grubu</label>
+                    <select name="customer_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">Tümü</option>
+                        <option value="INDIVIDUAL">Bireysel</option>
+                        <option value="CORPORATE">Kurumsal</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="w-full bg-primary hover:bg-dark text-white py-2 rounded-lg">
+                    <i class="fas fa-search mr-2"></i>Raporu Oluştur
+                </button>
+            </form>
+        </div>
+
+        <!-- Özet Kartları -->
+        <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 p-3 rounded-full mr-4">
+                        <i class="fas fa-wallet text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Toplam Alacak</p>
+                        <h3 class="text-2xl font-bold text-green-600">₺{{ total_receivables|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center">
+                    <div class="bg-red-100 p-3 rounded-full mr-4">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Vadesi Geçen</p>
+                        <h3 class="text-2xl font-bold text-red-600">₺{{ overdue_amount|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center">
+                    <div class="bg-yellow-100 p-3 rounded-full mr-4">
+                        <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">30 Gün İçinde</p>
+                        <h3 class="text-2xl font-bold text-yellow-600">₺{{ upcoming_amount|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rapor İçeriği -->
+    <div class="bg-white rounded-xl shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Cari Hesap Özet Raporu</h3>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Müşteri</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Bakiye</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Kredi Limiti</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Risk Oranı</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Son İşlem</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Durum</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for account_data in accounts %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-8 w-8">
+                                    <div class="h-8 w-8 rounded-full bg-primary bg-opacity-10 flex items-center justify-center">
+                                        <span class="text-primary font-semibold text-sm">
+                                            {% if account_data.account.customer.first_name %}
+                                                {{ account_data.account.customer.first_name.0|upper }}
+                                            {% elif account_data.account.customer.company_name %}
+                                                {{ account_data.account.customer.company_name.0|upper }}
+                                            {% else %}
+                                                ?
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900">{{ account_data.account.customer }}</div>
+                                    <div class="text-sm text-gray-500">{{ account_data.account.customer.get_customer_type_display }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <span class="text-sm font-bold {% if account_data.account.current_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                ₺{{ account_data.account.current_balance|floatformat:2 }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                            ₺{{ account_data.account.credit_limit|floatformat:2 }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            {% if account_data.account.credit_limit > 0 %}
+                                <span class="text-sm font-medium {% if account_data.risk_status == 'high' %}text-red-600{% elif account_data.risk_status == 'medium' %}text-yellow-600{% else %}text-green-600{% endif %}">
+                                    %{{ account_data.risk_percent|floatformat:0 }}
+                                </span>
+                            {% else %}
+                                <span class="text-sm text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                            {{ account_data.account.updated_at|date:"d.m.Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            {% if account_data.account.is_blocked %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Bloke</span>
+                            {% elif account_data.account.is_over_limit %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Limit Aştı</span>
+                            {% elif account_data.account.is_active %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Aktif</span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Pasif</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-10 text-gray-500">
+                            <i class="fas fa-chart-line text-3xl mb-2 block"></i>
+                            <p>Rapor verisi bulunamadı.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Yaşlandırma Analizi Grafiği -->
+    <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Borç Yaşlandırma Analizi</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+                <p class="text-2xl font-bold text-green-600">₺{{ aging.current|floatformat:2 }}</p>
+                <p class="text-sm text-gray-600">Vadesi Gelmemiş</p>
+            </div>
+            <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                <p class="text-2xl font-bold text-yellow-600">₺{{ aging.days_1_30|floatformat:2 }}</p>
+                <p class="text-sm text-gray-600">1-30 Gün</p>
+            </div>
+            <div class="text-center p-4 bg-orange-50 rounded-lg">
+                <p class="text-2xl font-bold text-orange-600">₺{{ aging.days_31_60|floatformat:2 }}</p>
+                <p class="text-sm text-gray-600">31-60 Gün</p>
+            </div>
+            <div class="text-center p-4 bg-red-50 rounded-lg">
+                <p class="text-2xl font-bold text-red-600">₺{{ aging.days_over_60|floatformat:2 }}</p>
+                <p class="text-sm text-gray-600">60+ Gün</p>
+            </div>
+        </div>
+        
+        <canvas id="agingChart" height="100"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Yaşlandırma grafiği
+const ctx = document.getElementById('agingChart').getContext('2d');
+const agingChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Vadesi Gelmemiş', '1-30 Gün', '31-60 Gün', '60+ Gün'],
+        datasets: [{
+            data: [
+                {{ aging.current|default:0 }},
+                {{ aging.days_1_30|default:0 }},
+                {{ aging.days_31_60|default:0 }},
+                {{ aging.days_over_60|default:0 }}
+            ],
+            backgroundColor: [
+                '#10b981',
+                '#f59e0b',
+                '#f97316',
+                '#ef4444'
+            ],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Excel'e aktarma
+function exportToExcel() {
+    window.location.href = '{% url "current_accounts:export_excel" %}';
+}
+
+// Yazdırma
+function printReport() {
+    window.print();
+}
+</script>
+{% endblock %}

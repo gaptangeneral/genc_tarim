@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Başlık ve İşlem Butonları -->
+    <div class="flex justify-between items-start">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ account.customer }}</h1>
+            <p class="text-gray-600">{{ account.customer.get_customer_type_display }} - Cari Hesap Detayı</p>
+        </div>
+        <div class="flex space-x-2">
+            <button onclick="quickPayment({{ account.pk }}, '{{ account.customer|escapejs }}')" 
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-money-bill-wave mr-2"></i>Hızlı Ödeme
+            </button>
+            <a href="{% url 'current_accounts:account_edit' pk=account.pk %}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-edit mr-2"></i>Düzenle
+            </a>
+        </div>
+    </div>
+
+    <!-- Hesap Durumu Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-wallet text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Güncel Bakiye</p>
+                    <h3 class="text-2xl font-bold {% if account.current_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                        ₺{{ account.current_balance|floatformat:2 }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow">
+            <div class="flex items-center">
+                <div class="bg-green-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-credit-card text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Kredi Limiti</p>
+                    <h3 class="text-2xl font-bold text-gray-900">₺{{ account.credit_limit|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow">
+            <div class="flex items-center">
+                <div class="bg-purple-100 p-3 rounded-full mr-4">
+                    <i class="fas fa-coins text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Kullanılabilir Kredi</p>
+                    <h3 class="text-2xl font-bold text-purple-600">₺{{ account.available_credit|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow">
+            <div class="flex items-center">
+                <div class="{% if account.is_blocked %}bg-red-100{% elif account.is_over_limit %}bg-yellow-100{% else %}bg-green-100{% endif %} p-3 rounded-full mr-4">
+                    <i class="fas fa-shield-alt {% if account.is_blocked %}text-red-600{% elif account.is_over_limit %}text-yellow-600{% else %}text-green-600{% endif %} text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Hesap Durumu</p>
+                    <h3 class="text-lg font-bold {% if account.is_blocked %}text-red-600{% elif account.is_over_limit %}text-yellow-600{% else %}text-green-600{% endif %}">
+                        {% if account.is_blocked %}
+                            Bloke
+                        {% elif account.is_over_limit %}
+                            Limit Aştı
+                        {% elif account.is_active %}
+                            Aktif
+                        {% else %}
+                            Pasif
+                        {% endif %}
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vade Analizleri -->
+    {% if overdue_transactions or upcoming_payments %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Vadesi Geçen Borçlar -->
+        {% if overdue_transactions %}
+        <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-red-800 mb-4 flex items-center">
+                <i class="fas fa-exclamation-triangle mr-2"></i>Vadesi Geçen Borçlar
+            </h3>
+            <div class="space-y-3">
+                {% for transaction in overdue_transactions %}
+                <div class="bg-white p-3 rounded-lg border border-red-100">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium text-gray-900">₺{{ transaction.amount|floatformat:2 }}</p>
+                            <p class="text-sm text-gray-600">{{ transaction.description }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-red-600 font-medium">{{ transaction.due_date|date:"d.m.Y" }}</p>
+                            <p class="text-xs text-gray-500">{{ transaction.due_date|timesince }} önce</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Yaklaşan Vadeler -->
+        {% if upcoming_payments %}
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-yellow-800 mb-4 flex items-center">
+                <i class="fas fa-clock mr-2"></i>Yaklaşan Vadeler (30 Gün)
+            </h3>
+            <div class="space-y-3">
+                {% for transaction in upcoming_payments %}
+                <div class="bg-white p-3 rounded-lg border border-yellow-100">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium text-gray-900">₺{{ transaction.amount|floatformat:2 }}</p>
+                            <p class="text-sm text-gray-600">{{ transaction.description }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-yellow-600 font-medium">{{ transaction.due_date|date:"d.m.Y" }}</p>
+                            <p class="text-xs text-gray-500">{{ transaction.due_date|timeuntil }} sonra</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Hesap Hareketleri -->
+    <div class="bg-white rounded-xl shadow">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Son Hareketler</h3>
+            <div class="flex space-x-2">
+                <button onclick="showTransactionForm()" class="bg-primary hover:bg-dark text-white px-3 py-1.5 rounded text-sm">
+                    <i class="fas fa-plus mr-1"></i>Yeni Hareket
+                </button>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşlem Tipi</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Açıklama</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Tutar</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Vade</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Durum</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for transaction in recent_transactions %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ transaction.created_at|date:"d.m.Y H:i" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if transaction.transaction_type == 'SALE' %}bg-red-100 text-red-800
+                                {% elif transaction.transaction_type == 'PAYMENT' %}bg-green-100 text-green-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ transaction.get_transaction_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            {{ transaction.description|truncatechars:50 }}
+                            {% if transaction.related_sale %}
+                                <span class="text-blue-600 text-xs">(Satış #{{ transaction.related_sale.id }})</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-bold 
+                            {% if transaction.amount >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if transaction.amount >= 0 %}+{% endif %}₺{{ transaction.amount|floatformat:2 }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                            {% if transaction.due_date %}
+                                {{ transaction.due_date|date:"d.m.Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            {% if transaction.transaction_type == 'SALE' %}
+                                {% if transaction.is_paid %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Ödendi</span>
+                                {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Ödenmedi</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-10 text-gray-500">
+                            <i class="fas fa-file-alt text-3xl mb-2 block"></i>
+                            <p>Henüz hareket kaydı bulunmuyor.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Hızlı Ödeme Modal -->
+<div id="quick-payment-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Hızlı Ödeme</h3>
+            <button onclick="closeQuickPayment()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="quick-payment-form">
+            {% csrf_token %}
+            <input type="hidden" id="payment-account-id" name="account_id" value="{{ account.pk }}">
+            
+            <div class="mb-4">
+                <p class="text-sm text-gray-600 mb-2">Müşteri:</p>
+                <p class="font-semibold text-gray-900">{{ account.customer }}</p>
+            </div>
+            
+            <div class="mb-4">
+                <label for="payment-amount" class="block text-sm font-medium text-gray-700 mb-1">Ödeme Tutarı (₺)</label>
+                <input type="number" step="0.01" min="0.01" id="payment-amount" name="amount" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div class="mb-6">
+                <label for="payment-description" class="block text-sm font-medium text-gray-700 mb-1">Açıklama (Opsiyonel)</label>
+                <input type="text" id="payment-description" name="description"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="Ödeme açıklaması">
+            </div>
+            
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeQuickPayment()" 
+                        class="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg">İptal</button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                    <i class="fas fa-check mr-2"></i>Ödemeyi Kaydet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Yeni Hareket Modal -->
+<div id="transaction-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Yeni Hareket Ekle</h3>
+            <button onclick="closeTransactionForm()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="transaction-form">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">İşlem Tipi</label>
+                <select name="transaction_type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Seçiniz</option>
+                    <option value="PAYMENT">Ödeme (Alacak)</option>
+                    <option value="ADJUSTMENT">Düzeltme</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tutar (₺)</label>
+                <input type="number" step="0.01" name="amount" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
+                <textarea name="description" rows="3" 
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Vade Tarihi (Opsiyonel)</label>
+                <input type="date" name="due_date"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeTransactionForm()" 
+                        class="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg">İptal</button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-primary hover:bg-dark text-white rounded-lg">
+                    <i class="fas fa-save mr-2"></i>Kaydet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Hızlı ödeme modal fonksiyonları
+function quickPayment(accountId, customerName) {
+    document.getElementById('payment-account-id').value = accountId;
+    document.getElementById('quick-payment-modal').classList.remove('hidden');
+    document.getElementById('quick-payment-modal').classList.add('flex');
+    document.getElementById('payment-amount').focus();
+}
+
+function closeQuickPayment() {
+    document.getElementById('quick-payment-modal').classList.add('hidden');
+    document.getElementById('quick-payment-modal').classList.remove('flex');
+    document.getElementById('quick-payment-form').reset();
+}
+
+// Yeni hareket modal fonksiyonları
+function showTransactionForm() {
+    document.getElementById('transaction-modal').classList.remove('hidden');
+    document.getElementById('transaction-modal').classList.add('flex');
+}
+
+function closeTransactionForm() {
+    document.getElementById('transaction-modal').classList.add('hidden');
+    document.getElementById('transaction-modal').classList.remove('flex');
+    document.getElementById('transaction-form').reset();
+}
+
+// Hızlı ödeme form submit
+document.getElementById('quick-payment-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "current_accounts:ajax_create_payment" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Hata: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Bir hata oluştu: ' + error);
+    });
+});
+
+// Yeni hareket form submit
+document.getElementById('transaction-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    formData.append('account_id', {{ account.pk }});
+    
+    fetch('{% url "current_accounts:ajax_create_transaction" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Hata: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Bir hata oluştu: ' + error);
+    });
+});
+
+// Modal dışına tıklanınca kapat
+document.getElementById('quick-payment-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeQuickPayment();
+    }
+});
+
+document.getElementById('transaction-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeTransactionForm();
+    }
+});
+</script>
+{% endblock %}

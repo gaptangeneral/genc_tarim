@@ -111,7 +111,15 @@
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10">
                                     <div class="h-10 w-10 rounded-full bg-primary bg-opacity-10 flex items-center justify-center">
-                                        <span class="text-primary font-semibold">{{ account.customer.first_name.0|default:account.customer.company_name.0|upper }}</span>
+                                        <span class="text-primary font-semibold">
+                                            {% if account.customer.first_name %}
+                                                {{ account.customer.first_name.0|upper }}
+                                            {% elif account.customer.company_name %}
+                                                {{ account.customer.company_name.0|upper }}
+                                            {% else %}
+                                                ?
+                                            {% endif %}
+                                        </span>
                                     </div>
                                 </div>
                                 <div class="ml-4">
