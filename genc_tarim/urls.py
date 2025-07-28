@@ -16,6 +16,7 @@ urlpatterns = [
     path('logs/', include('logs.urls', namespace='logs')),
     path('backups/', include('backups.urls', namespace='backups')),
     path('sales/', include('sales.urls', namespace='sales')), # BU SATIRI EKLEYİN
+    path('cari/', include('current_accounts.urls', namespace='current_accounts')),
 
 
     path('select2/', include('django_select2.urls')),

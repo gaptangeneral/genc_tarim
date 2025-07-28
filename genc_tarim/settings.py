@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'logs.apps.LogsConfig',
     'backups.apps.BackupsConfig',
     'sales.apps.SalesConfig',
+    'current_accounts.apps.CurrentAccountsConfig'
 ]
 
 MIDDLEWARE = [

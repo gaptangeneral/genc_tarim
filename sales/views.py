@@ -80,30 +80,63 @@ def search_products_ajax(request):
 @require_POST
 @transaction.atomic
 def finalize_sale_ajax(request):
-    # Bu fonksiyonun kendisi bir girinti seviyesinde başlar (genellikle 4 boşluk)
+    """Güncellenmiş satış tamamlama - veresiye desteği ile"""
     try:
         data = json.loads(request.body)
         cart_items = data.get('items', [])
         customer_id = data.get('customer_id')
-
-        # --- MÜŞTERİ SEÇİM BLOĞU (DOĞRU GİRİNTİ İLE) ---
-        try:
-            # Bu try'ın içindeki her şey bir seviye daha içeride olmalı
-            if customer_id:
-                customer = Customer.objects.get(pk=customer_id)
-            else:
-                customer, _ = Customer.objects.get_or_create(
-                    id=1,
-                    defaults={
-                        'first_name': 'Perakende',
-                        'last_name': 'Müşteri',
-                        'customer_type': 'INDIVIDUAL'
-                    }
-                )
-        except Customer.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Geçersiz müşteri seçimi. Böyle bir müşteri bulunamadı.'}, status=404)
+        payment_method = data.get('payment_method', 'CASH')  # YENİ
+        credit_days = int(data.get('credit_days', 30))  # YENİ
+        
+        # Müşteri kontrolü
+        if customer_id:
+            customer = Customer.objects.get(pk=customer_id)
+        else:
+            customer, _ = Customer.objects.get_or_create(
+                id=1,
+                defaults={
+                    'first_name': 'Perakende',
+                    'last_name': 'Müşteri',
+                    'customer_type': 'INDIVIDUAL'
+                }
+            )
+        
+        # VERESİYE SATIŞI KONTROLÜ
+        if payment_method == 'CREDIT':
+            # Müşterinin cari hesabı var mı?
+            if not hasattr(customer, 'credit_account'):
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Bu müşterinin cari hesabı bulunmuyor. Önce cari hesap açılmalı.'
+                }, status=400)
+            
+            # Kredi limiti kontrolü
+            total_amount = sum(
+                float(item['price']) * item['quantity'] * (1 + float(item['vat_rate'])/100) 
+                for item in cart_items
+            )
+            
+            if not customer.credit_account.can_make_purchase(total_amount):
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Kredi limiti yetersiz! Kullanılabilir limit: ₺{customer.credit_account.available_credit:,.2f}'
+                }, status=400)
+            
+            if customer.credit_account.is_blocked:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Bu müşterinin cari hesabı bloke edilmiş!'
+                }, status=400)
+        
+        # SATIŞ KAYDI OLUŞTUR
         new_sale = Sale.objects.create(
-            customer=customer, salesperson=request.user, status='COMPLETED')
+            customer=customer,
+            salesperson=request.user,
+            status='COMPLETED',
+            payment_method=payment_method,  # ← BURADA KAYDEDILIR
+        )
+        
+        # Satış kalemlerini ekle
         for item_data in cart_items:
             product = Product.objects.get(pk=item_data['id'])
             SaleItem.objects.create(
@@ -113,33 +146,66 @@ def finalize_sale_ajax(request):
                 unit_price=item_data['price'],
                 vat_rate=item_data['vat_rate']
             )
-            # --- YENİ EKLENEN KISIM: STOK HAREKETİ OLUŞTURMA ---
+            
+            # Stok hareketi
             StockMovement.objects.create(
                 product=product,
                 movement_type='SALE',
                 quantity=item_data['quantity'],
                 user=request.user,
-                customer=customer,  # Satışın yapıldığı müşteriyi de bağlıyoruz
-                notes=f"Satış #{new_sale.id} üzerinden çıkış."
+                customer=customer,
+                notes=f"Satış #{new_sale.id} - {payment_method}"
             )
-
-        # --- YENİ EKLENEN KISIM: SATIŞ TOPLAMLARINI GÜNCELLEME ---
+        
+        # Satış toplamlarını güncelle
         new_sale.update_totals()
-
-        response_data = {
+        
+        # VERESİYE İSE CARİ HESAP HAREKETİ OLUŞTUR
+        if payment_method == 'CREDIT':
+            from datetime import timedelta
+            from current_accounts.models import CreditTransaction
+            
+            due_date = timezone.now().date() + timedelta(days=credit_days)
+            
+            CreditTransaction.objects.create(
+                credit_account=customer.credit_account,
+                transaction_type='SALE',
+                amount=-new_sale.grand_total,  # Negatif = borç
+                related_sale=new_sale,
+                description=f'Veresiye Satış #{new_sale.id} ({credit_days} gün vade)',
+                due_date=due_date,
+                created_by=request.user,
+                is_paid=False
+            )
+        
+        return JsonResponse({
             'status': 'success',
             'message': f'Satış #{new_sale.id} başarıyla tamamlandı!',
             'sale_id': new_sale.id,
             'customer_name': new_sale.customer.get_full_name(),
             'grand_total': new_sale.grand_total,
             'item_count': new_sale.items.count(),
-            # Fiş ve fatura yazdırma URL'lerini de sunucu tarafında oluşturup gönderiyoruz.
+            'is_credit_sale': (payment_method == 'CREDIT'),
+            'payment_method_display': new_sale.get_payment_method_display(),
             'receipt_url': reverse('sales:sale_receipt', kwargs={'sale_id': new_sale.id}),
             'invoice_url': reverse('sales:sale_invoice', kwargs={'sale_id': new_sale.id})
-        }
-        return JsonResponse(response_data)
+        })
+        
+    except Customer.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Seçilen müşteri bulunamadı.'
+        }, status=404)
+    except Product.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Sepetteki ürünlerden biri bulunamadı.'
+        }, status=404)
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': f'Beklenmedik bir hata oluştu: {e}'}, status=500)
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Beklenmedik bir hata oluştu: {e}'
+        }, status=500)
 
 
 @login_required
