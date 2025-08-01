@@ -232,26 +232,28 @@ document.addEventListener('DOMContentLoaded', () => {
     let cart = []; // Sepet dizisi
     let searchTimeout; // Arama gecikmesi için zamanlayıcı
 
-    paymentMethodSelect.addEventListener('change', function() {
-        const selectedMethod = this.value;
-        const customerId = customerSelect.val();
+    paymentMethodSelect.addEventListener('change', async function() {
+    const selectedMethod = this.value;
+    const customerId = customerSelect.val();
+    
+    if (selectedMethod === 'CREDIT') {
+        // Veresiye için müşteri zorunlu
+        if (!customerId) {
+            alert('Veresiye satış için müşteri seçimi zorunludur!');
+            this.value = 'CASH';
+            return;
+        }
         
-        if (selectedMethod === 'CREDIT') {
-            // Veresiye için müşteri zorunlu
-            if (!customerId) {
-                alert('Veresiye satış için müşteri seçimi zorunludur!');
-                this.value = 'CASH';
-                return;
-            }
-            
-            // Cari hesap kontrolü
-            checkCustomerCreditAccount(customerId);
+        // Cari hesap kontrolü
+        const canProceed = await checkCustomerCreditAccount(customerId);
+        if (canProceed) {
             creditFields.classList.remove('hidden');
             updateDueDatePreview();
-        } else {
-            creditFields.classList.add('hidden');
         }
-    });
+    } else {
+        creditFields.classList.add('hidden');
+    }
+});
 
     creditDaysSelect.addEventListener('change', updateDueDatePreview);
      
@@ -272,32 +274,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     customerSelect.on('change', function() {
-        const customerId = this.value;
-        
-        if (customerId) {
-            // Cari hesap bilgilerini getir
-            fetch(`{% url 'current_accounts:ajax_customer_credit_info' %}?customer_id=${customerId}`)
-                .then(response => response.json())
-                .then(data => {
-                    updateCustomerCreditDisplay(data);
-                    
-                    // Eğer veresiye seçiliyse kontrol et
-                    if (paymentMethodSelect.value === 'CREDIT') {
-                        checkCustomerCreditAccount(customerId);
-                    }
-                })
-                .catch(error => {
-                    console.error('Cari hesap bilgisi alınırken hata:', error);
-                });
-        } else {
-            // Müşteri seçimi kaldırıldığında
-            customerCreditDisplay.classList.add('hidden');
-            if (paymentMethodSelect.value === 'CREDIT') {
-                paymentMethodSelect.value = 'CASH';
-                creditFields.classList.add('hidden');
-            }
+    const customerId = this.value;
+    
+    if (customerId) {
+        // Cari hesap bilgilerini getir
+        fetch(`/cari/ajax/customer-credit-info/?customer_id=${customerId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                updateCustomerCreditDisplay(data);
+                
+                // Eğer veresiye seçiliyse kontrol et
+                if (paymentMethodSelect.value === 'CREDIT') {
+                    checkCustomerCreditAccount(customerId);
+                }
+            })
+            .catch(error => {
+                console.error('Cari hesap bilgisi alınırken hata:', error);
+                customerCreditDisplay.innerHTML = `
+                    <div class="text-xs mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                        <span class="text-red-800 font-semibold">⚠️ Cari hesap bilgisi alınamadı</span>
+                    </div>
+                `;
+                customerCreditDisplay.classList.remove('hidden');
+            });
+    } else {
+        // Müşteri seçimi kaldırıldığında
+        customerCreditDisplay.classList.add('hidden');
+        if (paymentMethodSelect.value === 'CREDIT') {
+            paymentMethodSelect.value = 'CASH';
+            creditFields.classList.add('hidden');
         }
-    });
+    }
+});
+
     
     // 4. CARİ HESAP BİLGİLERİNİ GÖSTER
     function updateCustomerCreditDisplay(creditInfo) {
@@ -342,39 +356,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // 5. VERESİYE SATISH KONTROLÜ
-    function checkCustomerCreditAccount(customerId) {
-        fetch(`{% url 'current_accounts:ajax_customer_credit_info' %}?customer_id=${customerId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (!data.has_account) {
-                    alert('Bu müşterinin cari hesabı bulunmuyor! Önce cari hesap açılmalı.');
-                    paymentMethodSelect.value = 'CASH';
-                    creditFields.classList.add('hidden');
-                    return;
-                }
-                
-                if (data.is_blocked) {
-                    alert('Bu müşterinin cari hesabı bloke edilmiş! Veresiye satış yapılamaz.');
-                    paymentMethodSelect.value = 'CASH';
-                    creditFields.classList.add('hidden');
-                    return;
-                }
-                
-                // Sepet toplamını kontrol et
-                const cartTotal = cart.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
-                if (cartTotal > 0 && !data.can_purchase(cartTotal)) {
-                    alert(`Kredi limiti yetersiz! Kullanılabilir limit: ₺${parseFloat(data.available_credit).toLocaleString('tr-TR')}`);
-                    paymentMethodSelect.value = 'CASH';
-                    creditFields.classList.add('hidden');
-                }
-            })
-            .catch(error => {
-                console.error('Cari hesap kontrolü hatası:', error);
-                alert('Cari hesap kontrolü yapılamadı. Lütfen tekrar deneyin.');
-                paymentMethodSelect.value = 'CASH';
-                creditFields.classList.add('hidden');
-            });
+    async function checkCustomerCreditAccount(customerId) {
+    try {
+        const response = await fetch(`/cari/ajax/customer-credit-info/?customer_id=${customerId}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.has_account) {
+            alert('Bu müşterinin cari hesabı bulunmuyor! Önce cari hesap açılmalı.');
+            paymentMethodSelect.value = 'CASH';
+            creditFields.classList.add('hidden');
+            return false;
+        }
+        
+        if (data.is_blocked) {
+            alert('Bu müşterinin cari hesabı bloke edilmiş! Veresiye satış yapılamaz.');
+            paymentMethodSelect.value = 'CASH';
+            creditFields.classList.add('hidden');
+            return false;
+        }
+        
+        // Sepet toplamını kontrol et (KDV dahil)
+        const cartTotal = cart.reduce((sum, item) => {
+            const lineTotal = Number(item.price) * item.quantity;
+            const vatAmount = lineTotal * (Number(item.vat_rate) / 100);
+            return sum + lineTotal + vatAmount;
+        }, 0);
+        
+        if (cartTotal > 0 && cartTotal > data.available_credit) {
+            alert(`Kredi limiti yetersiz!\nKullanılabilir limit: ₺${parseFloat(data.available_credit).toLocaleString('tr-TR', {minimumFractionDigits: 2})}\nİhtiyaç: ₺${cartTotal.toLocaleString('tr-TR', {minimumFractionDigits: 2})}`);
+            paymentMethodSelect.value = 'CASH';
+            creditFields.classList.add('hidden');
+            return false;
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('Cari hesap kontrolü hatası:', error);
+        alert('Cari hesap kontrolü yapılamadı. Ağ bağlantınızı kontrol edin ve tekrar deneyin.');
+        paymentMethodSelect.value = 'CASH';
+        creditFields.classList.add('hidden');
+        return false;
     }
+}
 
 
     // Müşteri seçme alanını (Select2) başlat
@@ -480,91 +509,101 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Satışı tamamlama
-   const finalizeSale = () => {
-        if(cart.length === 0) {
-            alert("Sepet boş. Lütfen ürün ekleyin.");
-            return;
-        }
+   const finalizeSale = async () => {
+    if(cart.length === 0) {
+        alert("Sepet boş. Lütfen ürün ekleyin.");
+        return;
+    }
 
         // Veresiye satış için ek kontroller
         const paymentMethod = paymentMethodSelect.value;
-        const customerId = customerSelect.val();
-        
-        if (paymentMethod === 'CREDIT') {
-            if (!customerId) {
-                alert("Veresiye satış için müşteri seçimi zorunludur!");
-                return;
-            }
-            
-            // Son bir kez kredi kontrolü yap
-            checkCustomerCreditAccount(customerId);
+    const customerId = customerSelect.val();
+    
+    if (paymentMethod === 'CREDIT') {
+        if (!customerId) {
+            alert("Veresiye satış için müşteri seçimi zorunludur!");
+            return;
         }
+        
+        // Son bir kez kredi kontrolü yap
+        const canProceed = await checkCustomerCreditAccount(customerId);
+        if (!canProceed) {
+            return;
+        }
+    }
 
         finalizeSaleBtn.disabled = true;
-        finalizeSaleBtn.textContent = 'İşleniyor...';
+        finalizeSaleBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>İşleniyor...';
         
         const saleData = {
-            customer_id: customerId,
-            payment_method: paymentMethod,  // YENİ EKLENDİ
-            credit_days: creditDaysSelect.value,  // YENİ EKLENDİ
-            items: cart.map(item => ({ 
-                id: item.id, 
-                quantity: item.quantity, 
-                price: item.price, 
-                vat_rate: item.vat_rate 
-            }))
-        };
-
-        fetch(`{% url 'sales:ajax_finalize_sale' %}`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
-            body: JSON.stringify(saleData)
-        })
-        .then(res => {
-            if (!res.ok) {
-                return res.json().then(err => Promise.reject(err));
-            }
-            return res.json();
-        })
-        .then(data => {
-            if (data.status === 'success') {
-                // Modal bilgilerini güncelle
-                modalSaleId.textContent = `#${data.sale_id}`;
-                modalCustomerName.textContent = data.customer_name;
-                modalGrandTotal.textContent = formatCurrency(data.grand_total);
-                modalItemCount.textContent = `${data.item_count} kalem ürün satıldı.`;
-                
-                // Veresiye satış uyarısı
-                if (data.is_credit_sale) {
-                    modalItemCount.innerHTML += `<br><span class="text-blue-600 font-semibold">📝 Veresiye satış gerçekleştirildi</span>`;
-                }
-                
-                modalReceiptBtn.href = data.receipt_url;
-                modalInvoiceBtn.href = data.invoice_url;
-                
-                saleSuccessModal.classList.remove('hidden');
-                
-                // Formu sıfırla
-                cart = [];
-                renderCart();
-                productSearchInput.value = '';
-                paymentMethodSelect.value = 'CASH';
-                creditFields.classList.add('hidden');
-                customerSelect.val('').trigger('change');
-                fetchProducts();
-            } else {
-                alert(data.message || 'Bilinmeyen bir hata oluştu.');
-            }
-        })
-        .catch(err => {
-            const errorMessage = err.message || 'Sunucu hatası. Satış tamamlanamadı.';
-            alert(errorMessage);
-        })
-        .finally(() => {
-            finalizeSaleBtn.disabled = false;
-            finalizeSaleBtn.textContent = 'Satışı Tamamla';
-        });
+        customer_id: customerId,
+        payment_method: paymentMethod,
+        credit_days: creditDaysSelect.value,
+        items: cart.map(item => ({ 
+            id: item.id, 
+            quantity: item.quantity, 
+            price: item.price, 
+            vat_rate: item.vat_rate 
+        }))
     };
+
+        try {
+        const response = await fetch(`{% url 'sales:ajax_finalize_sale' %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', 
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(saleData)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Sunucu hatası');
+        }
+
+        if (data.status === 'success') {
+            // Modal bilgilerini güncelle
+            modalSaleId.textContent = `#${data.sale_id}`;
+            modalCustomerName.textContent = data.customer_name;
+            modalGrandTotal.textContent = formatCurrency(data.grand_total);
+            modalItemCount.textContent = `${data.item_count} kalem ürün satıldı.`;
+            
+            // Veresiye satış uyarısı
+            const paymentInfo = document.getElementById('modal-payment-info');
+            if (data.is_credit_sale) {
+                paymentInfo.innerHTML = '📝 Veresiye satış gerçekleştirildi';
+                paymentInfo.classList.remove('hidden');
+            } else {
+                paymentInfo.innerHTML = `💳 ${data.payment_method_display} ile ödendi`;
+                paymentInfo.classList.remove('hidden');
+            }
+            
+            modalReceiptBtn.href = data.receipt_url;
+            modalInvoiceBtn.href = data.invoice_url;
+            
+            saleSuccessModal.classList.remove('hidden');
+            
+            // Formu sıfırla
+            cart = [];
+            renderCart();
+            productSearchInput.value = '';
+            paymentMethodSelect.value = 'CASH';
+            creditFields.classList.add('hidden');
+            customerSelect.val('').trigger('change');
+            fetchProducts();
+        } else {
+            throw new Error(data.message || 'Bilinmeyen bir hata oluştu.');
+        }
+    } catch (error) {
+        console.error('Satış hatası:', error);
+        alert(`Satış tamamlanamadı: ${error.message}`);
+    } finally {
+        finalizeSaleBtn.disabled = false;
+        finalizeSaleBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Satışı Tamamla';
+    }
+};
     // --- OLAY DİNLEYİCİLERİ (EVENT LISTENERS) ---
 
     // Ürün arama kutusu

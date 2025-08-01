@@ -26,10 +26,31 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Poppins', sans-serif; background-color: #f5f7fa; }
         .sidebar { transition: all 0.3s ease; }
-        .nav-link { display: flex; align-items: center; padding: 0.75rem 1rem; color: #4b5563; border-radius: 0.5rem; transition: all 0.2s ease; }
-        .nav-link:hover { background-color: #e8f5e9; color: #2e7d32; }
-        .nav-link.active { background-color: #2e7d32; color: white; font-weight: 600; }
-        .nav-link-disabled { display: flex; align-items: center; padding: 0.75rem 1rem; color: #9ca3af; cursor: not-allowed; }
+        .nav-link { 
+            display: flex; 
+            align-items: center; 
+            padding: 0.75rem 1rem; 
+            color: #4b5563; 
+            border-radius: 0.5rem; 
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .nav-link:hover { 
+            background-color: #e8f5e9; 
+            color: #2e7d32; 
+        }
+        .nav-link.active { 
+            background-color: #2e7d32 !important; 
+            color: white !important; 
+            font-weight: 600; 
+        }
+        .nav-link-disabled { 
+            display: flex; 
+            align-items: center; 
+            padding: 0.75rem 1rem; 
+            color: #9ca3af; 
+            cursor: not-allowed; 
+        }
     </style>
     
     {{ form.media.css }}
@@ -48,7 +69,7 @@
                 </a>
             </div>
             
-            <div class="p-4 flex items-center space-x-3 border-b border-gray-200">
+            <div class="p-4 flex items-center space-x-3 border-b border-gray-200 bg-white">
                 <div class="relative">
                     <div class="w-12 h-12 rounded-full bg-light flex items-center justify-center">
                         <span class="text-2xl font-bold text-primary">{{ user.username.0|upper }}</span>
@@ -61,52 +82,132 @@
                 </div>
             </div>
             
-        <nav class="flex-1 py-4">
-    <ul class="space-y-1 px-2">
-    {% if user.is_superuser %}
-        <li><h3 class="px-4 mt-2 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Yönetim</h3></li>
-        <li><a href="{% url 'dashboard:index' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Pano</span></a></li>
-        <li><a href="{% url 'service:servicerecord_list' %}" class="nav-link"><i class="fas fa-tools fa-fw mr-3"></i><span class="text-sm">Servis Yönetimi</span></a></li>
-        <li><a href="{% url 'service:service_reports' %}" class="nav-link"><i class="fas fa-chart-bar fa-fw mr-3"></i><span class="text-sm">Servis Raporları</span></a></li>
-        <li><a href="{% url 'customers:customer_list' %}" class="nav-link"><i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span></a></li>
-        
-        <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Satış Yönetimi</h3></li>
-        <li><a href="{% url 'sales:pos_terminal' %}" class="nav-link"><i class="fas fa-cash-register fa-fw mr-3"></i><span class="text-sm">Satış Ekranı</span></a></li>
-        <li><a href="{% url 'sales:sale_history_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span></a></li>
+            <nav class="flex-1 py-4 bg-white">
+                <ul class="space-y-1 px-2">
+                {% if user.is_superuser %}
+                    <li class="bg-white"><h3 class="px-4 mt-2 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Yönetim</h3></li>
+                    <li class="bg-white">
+                        <a href="{% url 'dashboard:index' %}" class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+                            <i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Pano</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'service:servicerecord_list' %}" class="nav-link {% if request.resolver_match.app_name == 'service' and 'servicerecord_list' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-tools fa-fw mr-3"></i><span class="text-sm">Servis Yönetimi</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'service:service_reports' %}" class="nav-link {% if request.resolver_match.app_name == 'service' and 'reports' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-chart-bar fa-fw mr-3"></i><span class="text-sm">Servis Raporları</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'customers:customer_list' %}" class="nav-link {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
+                            <i class="fas fa-users fa-fw mr-3"></i><span class="text-sm">Müşteriler</span>
+                        </a>
+                    </li>
+                    
+                    <li class="bg-white"><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Satış Yönetimi</h3></li>
+                    <li class="bg-white">
+                        <a href="{% url 'sales:pos_terminal' %}" class="nav-link {% if request.resolver_match.app_name == 'sales' and 'pos' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-cash-register fa-fw mr-3"></i><span class="text-sm">Satış Ekranı</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'sales:sale_history_list' %}" class="nav-link {% if request.resolver_match.app_name == 'sales' and 'history' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Satış Geçmişi</span>
+                        </a>
+                    </li>
 
-        <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Cari Hesap Yönetimi</h3></li>
-        <li><a href="{% url 'current_accounts:account_list' %}" class="nav-link"><i class="fas fa-address-book fa-fw mr-3"></i><span class="text-sm">Cari Hesaplar</span></a></li>
-        <li><a href="{% url 'current_accounts:account_create' %}" class="nav-link"><i class="fas fa-user-plus fa-fw mr-3"></i><span class="text-sm">Yeni Cari Hesap</span></a></li>
-        <li><a href="{% url 'current_accounts:account_reports' %}" class="nav-link"><i class="fas fa-chart-pie fa-fw mr-3"></i><span class="text-sm">Cari Raporlar</span></a></li>
+                    <li class="bg-white"><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Cari Hesap Yönetimi</h3></li>
+                    <li class="bg-white">
+                        <a href="{% url 'current_accounts:account_list' %}" class="nav-link {% if request.resolver_match.app_name == 'current_accounts' and 'account_list' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-address-book fa-fw mr-3"></i><span class="text-sm">Cari Hesaplar</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'current_accounts:account_create' %}" class="nav-link {% if request.resolver_match.app_name == 'current_accounts' and 'create' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-user-plus fa-fw mr-3"></i><span class="text-sm">Yeni Cari Hesap</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'current_accounts:account_reports' %}" class="nav-link {% if request.resolver_match.app_name == 'current_accounts' and 'reports' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-chart-pie fa-fw mr-3"></i><span class="text-sm">Cari Raporlar</span>
+                        </a>
+                    </li>
 
-        <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Veri Yönetimi</h3></li>
-        <li><a href="{% url 'inventory:product_list' %}" class="nav-link"><i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürünler</span></a></li>
-        {% if perms.inventory.view_category %}
-        <li><a href="{% url 'inventory:category_list' %}" class="nav-link"><i class="fas fa-sitemap fa-fw mr-3"></i><span class="text-sm">Kategoriler</span></a></li>
-        {% endif %}
+                    <li class="bg-white"><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Veri Yönetimi</h3></li>
+                    <li class="bg-white">
+                        <a href="{% url 'inventory:product_list' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and 'product' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-box fa-fw mr-3"></i><span class="text-sm">Ürünler</span>
+                        </a>
+                    </li>
+                    {% if perms.inventory.view_category %}
+                    <li class="bg-white">
+                        <a href="{% url 'inventory:category_list' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and 'category' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-sitemap fa-fw mr-3"></i><span class="text-sm">Kategoriler</span>
+                        </a>
+                    </li>
+                    {% endif %}
 
-        <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Raporlar</h3></li>
-        <li><a href="{% url 'inventory:reports_page' %}" class="nav-link"><i class="fas fa-chart-line fa-fw mr-3"></i><span class="text-sm">Envanter Raporları</span></a></li>
+                    <li class="bg-white"><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Raporlar</h3></li>
+                    <li class="bg-white">
+                        <a href="{% url 'inventory:reports_page' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and 'reports' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-chart-line fa-fw mr-3"></i><span class="text-sm">Envanter Raporları</span>
+                        </a>
+                    </li>
 
-        <li><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Kullanıcı İşlemleri</h3></li>
-        <li><a href="{% url 'accounts:user_add' %}" class="nav-link"><i class="fas fa-users-cog fa-fw mr-3"></i><span class="text-sm">Yeni Kullanıcı Ekle</span></a></li>
-        <li><a href="{% url 'accounts:user_list' %}" class="nav-link"><i class="fas fa-users-cog fa-fw mr-3"></i><span class="text-sm">Kullanıcıları Yönet</span></a></li>
-        <li><a href="{% url 'accounts:group_list' %}" class="nav-link"><i class="fas fa-user-shield fa-fw mr-3"></i><span class="text-sm">Gruplar & Yetkiler</span></a></li>
-        <li><a href="{% url 'logs:log_list' %}" class="nav-link"><i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Aktivite Kayıtları</span></a></li>
-        <li><a href="{% url 'backups:backup_management' %}" class="nav-link"><i class="fas fa-database fa-fw mr-3"></i><span class="text-sm">Yedekleme</span></a></li>
+                    <li class="bg-white"><h3 class="px-4 mt-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Kullanıcı İşlemleri</h3></li>
+                    <li class="bg-white">
+                        <a href="{% url 'accounts:user_add' %}" class="nav-link {% if request.resolver_match.app_name == 'accounts' and 'user_add' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-user-plus fa-fw mr-3"></i><span class="text-sm">Yeni Kullanıcı Ekle</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'accounts:user_list' %}" class="nav-link {% if request.resolver_match.app_name == 'accounts' and 'user_list' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-users-cog fa-fw mr-3"></i><span class="text-sm">Kullanıcıları Yönet</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'accounts:group_list' %}" class="nav-link {% if request.resolver_match.app_name == 'accounts' and 'group' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-user-shield fa-fw mr-3"></i><span class="text-sm">Gruplar & Yetkiler</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'logs:log_list' %}" class="nav-link {% if request.resolver_match.app_name == 'logs' %}active{% endif %}">
+                            <i class="fas fa-history fa-fw mr-3"></i><span class="text-sm">Aktivite Kayıtları</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'backups:backup_management' %}" class="nav-link {% if request.resolver_match.app_name == 'backups' %}active{% endif %}">
+                            <i class="fas fa-database fa-fw mr-3"></i><span class="text-sm">Yedekleme</span>
+                        </a>
+                    </li>
 
-    
-    {% elif 'Teknisyen' in user.groups.all|join:", " %}
-        <li><a href="{% url 'service:technician_dashboard' %}" class="nav-link"><i class="fas fa-user-cog fa-fw mr-3"></i><span class="text-sm">Bana Atanan İşler</span></a></li>
-        <li><a href="{% url 'service:servicerecord_list' %}" class="nav-link"><i class="fas fa-tools fa-fw mr-3"></i><span class="text-sm">Tüm Servis Kayıtları</span></a></li>
-        
-    {% else %}
-        <li><a href="{% url 'dashboard:index' %}" class="nav-link"><i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Pano</span></a></li>
-    {% endif %}
-</ul>
-</nav>
+                
+                {% elif 'Teknisyen' in user.groups.all|join:", " %}
+                    <li class="bg-white">
+                        <a href="{% url 'service:technician_dashboard' %}" class="nav-link {% if 'technician_dashboard' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-user-cog fa-fw mr-3"></i><span class="text-sm">Bana Atanan İşler</span>
+                        </a>
+                    </li>
+                    <li class="bg-white">
+                        <a href="{% url 'service:servicerecord_list' %}" class="nav-link {% if request.resolver_match.app_name == 'service' and 'servicerecord_list' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="fas fa-tools fa-fw mr-3"></i><span class="text-sm">Tüm Servis Kayıtları</span>
+                        </a>
+                    </li>
+                    
+                {% else %}
+                    <li class="bg-white">
+                        <a href="{% url 'dashboard:index' %}" class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+                            <i class="fas fa-tachometer-alt fa-fw mr-3"></i><span class="text-sm">Pano</span>
+                        </a>
+                    </li>
+                {% endif %}
+                </ul>
+            </nav>
             
-            <div class="p-4 border-t border-gray-200">
+            <div class="p-4 border-t border-gray-200 bg-white">
                 <a href="{% url 'accounts:logout' %}" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                     <i class="fas fa-sign-out-alt w-6 text-center mr-3"></i>
                     <span>Çıkış Yap</span>
@@ -151,6 +252,21 @@
     </div>
     {% endif %}
 
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const openSidebarBtn = document.getElementById('openSidebar');
+        if (openSidebarBtn) {
+            openSidebarBtn.addEventListener('click', function() {
+                if (sidebar) {
+                    sidebar.classList.remove('hidden');
+                    sidebar.classList.add('flex');
+                    // Dışarıya tıklamayı dinlemek için bir overlay de eklenebilir
+                }
+            });
+        }
+
+    
+    </script>
     <script>
         const sidebar = document.getElementById('sidebar');
         const openSidebarBtn = document.getElementById('openSidebar');

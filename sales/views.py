@@ -17,7 +17,7 @@ from django.shortcuts import get_object_or_404, render
 from .models import Sale
 from customers.models import Customer
 from django.views.generic import ListView, DetailView
-
+from decimal import Decimal
 
 
 class POSView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
@@ -37,9 +37,9 @@ class POSView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
             sale_date__date=today, status='COMPLETED')
 
         daily_total = sales_today.aggregate(
-            total=Sum('grand_total'))['total'] or 0
+            total=Sum('grand_total'))['total'] or Decimal('0')
         transaction_count = sales_today.count()
-        average_basket = daily_total / transaction_count if transaction_count > 0 else 0
+        average_basket = daily_total / transaction_count if transaction_count > 0 else Decimal('0')
 
         context['daily_total_sales'] = daily_total
         context['daily_transaction_count'] = transaction_count
@@ -70,7 +70,7 @@ def search_products_ajax(request):
 
     product_list = [
         {'id': p.id, 'name': p.name, 'code': p.product_code, 'stock': p.quantity,
-         'price': p.selling_price, 'vat_rate': p.vat_rate.rate if p.vat_rate else 20.00}
+         'price': Decimal(str(p.selling_price)), 'vat_rate': Decimal(str(p.vat_rate.rate)) if p.vat_rate else Decimal('20.00')}
         for p in products
     ]
     return JsonResponse({'products': product_list, 'is_barcode_match': len(product_list) == 1 and is_barcode_scan})
@@ -85,8 +85,8 @@ def finalize_sale_ajax(request):
         data = json.loads(request.body)
         cart_items = data.get('items', [])
         customer_id = data.get('customer_id')
-        payment_method = data.get('payment_method', 'CASH')  # YENİ
-        credit_days = int(data.get('credit_days', 30))  # YENİ
+        payment_method = data.get('payment_method', 'CASH')
+        credit_days = int(data.get('credit_days', 30))
         
         # Müşteri kontrolü
         if customer_id:
@@ -103,6 +103,12 @@ def finalize_sale_ajax(request):
         
         # VERESİYE SATIŞI KONTROLÜ
         if payment_method == 'CREDIT':
+            if not customer_id:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Veresiye satış için müşteri seçimi zorunludur.'
+                }, status=400)
+            
             # Müşterinin cari hesabı var mı?
             if not hasattr(customer, 'credit_account'):
                 return JsonResponse({
@@ -110,22 +116,37 @@ def finalize_sale_ajax(request):
                     'message': 'Bu müşterinin cari hesabı bulunmuyor. Önce cari hesap açılmalı.'
                 }, status=400)
             
-            # Kredi limiti kontrolü
-            total_amount = sum(
-                float(item['price']) * item['quantity'] * (1 + float(item['vat_rate'])/100) 
-                for item in cart_items
-            )
+            credit_account = customer.credit_account
             
-            if not customer.credit_account.can_make_purchase(total_amount):
+            # Hesap aktif mi ve bloke değil mi?
+            if not credit_account.is_active:
                 return JsonResponse({
                     'status': 'error',
-                    'message': f'Kredi limiti yetersiz! Kullanılabilir limit: ₺{customer.credit_account.available_credit:,.2f}'
+                    'message': 'Bu müşterinin cari hesabı pasif durumda!'
                 }, status=400)
             
-            if customer.credit_account.is_blocked:
+            if credit_account.is_blocked:
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Bu müşterinin cari hesabı bloke edilmiş!'
+                }, status=400)
+            
+            # Toplam tutarı hesapla (KDV dahil)
+            total_amount = Decimal('0')
+            for item in cart_items:
+                item_price = Decimal(str(item['price']))
+                item_quantity = int(item['quantity'])
+                item_vat_rate = Decimal(str(item['vat_rate']))
+                
+                line_total = item_price * item_quantity
+                line_vat = line_total * (item_vat_rate / Decimal('100'))
+                total_amount += line_total + line_vat
+            
+            # Kredi limiti kontrolü
+            if not credit_account.can_make_purchase(total_amount):
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Kredi limiti yetersiz! Kullanılabilir limit: ₺{credit_account.available_credit:,.2f}, İhtiyaç: ₺{total_amount:,.2f}'
                 }, status=400)
         
         # SATIŞ KAYDI OLUŞTUR
@@ -133,7 +154,7 @@ def finalize_sale_ajax(request):
             customer=customer,
             salesperson=request.user,
             status='COMPLETED',
-            payment_method=payment_method,  # ← BURADA KAYDEDILIR
+            payment_method=payment_method,
         )
         
         # Satış kalemlerini ekle
@@ -143,8 +164,8 @@ def finalize_sale_ajax(request):
                 sale=new_sale,
                 product=product,
                 quantity=item_data['quantity'],
-                unit_price=item_data['price'],
-                vat_rate=item_data['vat_rate']
+                unit_price=Decimal(str(item_data['price'])),
+                vat_rate=Decimal(str(item_data['vat_rate']))
             )
             
             # Stok hareketi
@@ -163,6 +184,7 @@ def finalize_sale_ajax(request):
         # VERESİYE İSE CARİ HESAP HAREKETİ OLUŞTUR
         if payment_method == 'CREDIT':
             from datetime import timedelta
+            from django.utils import timezone
             from current_accounts.models import CreditTransaction
             
             due_date = timezone.now().date() + timedelta(days=credit_days)
@@ -170,7 +192,7 @@ def finalize_sale_ajax(request):
             CreditTransaction.objects.create(
                 credit_account=customer.credit_account,
                 transaction_type='SALE',
-                amount=-new_sale.grand_total,  # Negatif = borç
+                amount=Decimal("-1") * new_sale.grand_total,
                 related_sale=new_sale,
                 description=f'Veresiye Satış #{new_sale.id} ({credit_days} gün vade)',
                 due_date=due_date,
@@ -202,9 +224,10 @@ def finalize_sale_ajax(request):
             'message': 'Sepetteki ürünlerden biri bulunamadı.'
         }, status=404)
     except Exception as e:
+        # Debug için hata detayını da ekleyelim
         return JsonResponse({
             'status': 'error',
-            'message': f'Beklenmedik bir hata oluştu: {e}'
+            'message': f'Beklenmedik bir hata oluştu: {str(e)}'
         }, status=500)
 
 
@@ -242,10 +265,6 @@ class SaleHistoryListView(ListView):
             queryset = queryset.filter(created_at__gte=start_date)
 
         if end_date:
-            # Bitiş tarihini de dahil etmek için günün sonunu alabiliriz
-            # from datetime import datetime, time
-            # end_date_dt = datetime.strptime(end_date, '%Y-%m-%d')
-            # end_date_max = datetime.combine(end_date_dt, time.max)
             queryset = queryset.filter(created_at__lte=end_date)
 
         return queryset
@@ -265,4 +284,3 @@ class SaleHistoryDetailView(DetailView):
     model = Sale
     template_name = 'sales/sale_history_detail.html'
     context_object_name = 'sale'
-

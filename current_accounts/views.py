@@ -410,20 +410,65 @@ class CreditAccountReportsView(LoginRequiredMixin, PermissionRequiredMixin, Temp
         
         # Rapor filtreleri
         report_type = self.request.GET.get('report_type', 'summary')
-        start_date = self.request.GET.get('start_date')
-        end_date = self.request.GET.get('end_date')
+        start_date_str = self.request.GET.get('start_date')
+        end_date_str = self.request.GET.get('end_date')
         customer_type = self.request.GET.get('customer_type')
+        
+        # Tarih aralığı belirleme
+        from datetime import datetime, timedelta
+        from django.utils import timezone
+        
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=30)  # Varsayılan 30 gün
+        
+        if start_date_str:
+            try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+                start_date = timezone.make_aware(start_date) if timezone.is_naive(start_date) else start_date
+            except ValueError:
+                pass
+        
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+                # Günün sonuna kadar dahil etmek için
+                end_date = end_date.replace(hour=23, minute=59, second=59)
+                end_date = timezone.make_aware(end_date) if timezone.is_naive(end_date) else end_date
+            except ValueError:
+                pass
         
         # Temel veriler
         accounts_queryset = CreditAccount.objects.select_related('customer').all()
         
-        # Filtreler
+        # Müşteri tipi filtresi
         if customer_type:
             accounts_queryset = accounts_queryset.filter(customer__customer_type=customer_type)
         
-        context['accounts'] = accounts_queryset
+        # Risk analizi ile birlikte hesaplamalar
+        accounts_with_analysis = []
+        for account in accounts_queryset:
+            risk_percent = 0
+            risk_status = 'low'
+            
+            if account.credit_limit > 0:
+                # Risk yüzdesi hesaplama: Kullanılan limitin yüzdesi
+                used_limit = account.credit_limit + account.current_balance  # current_balance negatifse kullanılan limit artar
+                risk_percent = max(0, (used_limit / account.credit_limit) * 100)
+                
+                if risk_percent >= 90:
+                    risk_status = 'high'
+                elif risk_percent >= 70:
+                    risk_status = 'medium'
+            
+            accounts_with_analysis.append({
+                'account': account,
+                'risk_percent': risk_percent,
+                'risk_status': risk_status
+            })
         
-        # Özet istatistikler
+        context['accounts'] = accounts_with_analysis
+        
+        # Özet istatistikler - Tarih filtreli
         today = timezone.now().date()
         
         # Toplam alacaklar (negatif bakiyeler)
@@ -432,35 +477,33 @@ class CreditAccountReportsView(LoginRequiredMixin, PermissionRequiredMixin, Temp
         )['total'] or 0
         total_receivables = abs(total_receivables)
         
-        # Vadesi geçen borçlar
+        # Vadesi geçen borçlar - tarih filtreli
         overdue_transactions = CreditTransaction.objects.filter(
             transaction_type='SALE',
             is_paid=False,
-            due_date__lt=today
+            due_date__lt=today,
+            created_at__range=(start_date, end_date)
         )
-        if start_date:
-            overdue_transactions = overdue_transactions.filter(created_at__gte=start_date)
-        if end_date:
-            overdue_transactions = overdue_transactions.filter(created_at__lte=end_date)
-            
+        
         overdue_amount = overdue_transactions.aggregate(
             total=Sum('amount')
         )['total'] or 0
         overdue_amount = abs(overdue_amount)
         
-        # 30 gün içinde vadesi gelecek
+        # 30 gün içinde vadesi gelecek - tarih filtreli
         upcoming_transactions = CreditTransaction.objects.filter(
             transaction_type='SALE',
             is_paid=False,
             due_date__gte=today,
-            due_date__lte=today + timedelta(days=30)
+            due_date__lte=today + timedelta(days=30),
+            created_at__range=(start_date, end_date)
         )
         upcoming_amount = upcoming_transactions.aggregate(
             total=Sum('amount')
         )['total'] or 0
         upcoming_amount = abs(upcoming_amount)
         
-        # Yaşlandırma analizi
+        # Yaşlandırma analizi - tarih filtreli
         aging_data = {
             'current': 0,  # Vadesi gelmemiş
             'days_1_30': 0,  # 1-30 gün gecikmiş
@@ -481,11 +524,12 @@ class CreditAccountReportsView(LoginRequiredMixin, PermissionRequiredMixin, Temp
                 else:
                     aging_data['days_over_60'] += amount
         
-        # Vadesi gelmemiş işlemler
+        # Vadesi gelmemiş işlemler - tarih filtreli
         current_transactions = CreditTransaction.objects.filter(
             transaction_type='SALE',
             is_paid=False,
-            due_date__gte=today
+            due_date__gte=today,
+            created_at__range=(start_date, end_date)
         )
         aging_data['current'] = abs(current_transactions.aggregate(
             total=Sum('amount')
@@ -497,6 +541,11 @@ class CreditAccountReportsView(LoginRequiredMixin, PermissionRequiredMixin, Temp
             'upcoming_amount': upcoming_amount,
             'aging': aging_data,
             'report_type': report_type,
+            'start_date': start_date,
+            'end_date': end_date,
+            'start_date_str': start_date_str or '',
+            'end_date_str': end_date_str or '',
+            'customer_type': customer_type or '',
         })
         
         return context
