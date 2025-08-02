@@ -416,20 +416,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Ürünleri ekranda listeleme
     const renderProducts = (products) => {
-        productListDiv.innerHTML = '';
-        if (!products || products.length === 0) {
-            productListDiv.innerHTML = `<p class="col-span-full text-center py-10 text-gray-500">Ürün bulunamadı.</p>`;
-            return;
-        }
-        products.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'product-card border rounded-lg p-3 cursor-pointer hover:border-primary transition-all flex flex-col justify-between';
-            card.innerHTML = `<div><p class="font-semibold text-sm leading-tight truncate" title="${p.name}">${p.name}</p><p class="text-xs text-gray-400">Stok: ${p.stock}</p></div><p class="font-bold text-primary mt-2 text-right">${formatCurrency(p.price)}</p>`;
-            card.dataset.product = JSON.stringify(p);
-            card.addEventListener('click', () => addToCart(JSON.parse(card.dataset.product)));
-            productListDiv.appendChild(card);
-        });
-    };
+    productListDiv.innerHTML = '';
+    if (!products || products.length === 0) {
+        productListDiv.innerHTML = `<p class="col-span-full text-center py-10 text-gray-500">Ürün bulunamadı.</p>`;
+        return;
+    }
+    products.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'product-card border rounded-lg p-3 cursor-pointer hover:border-primary transition-all flex flex-col h-full';
+        card.innerHTML = `
+    <div class="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 p-3 transition-transform duration-200 hover:shadow-md hover:scale-102">
+        <!-- Ürün Görseli -->
+        <div class="w-full h-28 bg-gray-50 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+            ${p.image_url 
+                ? `<img src="${p.image_url}" alt="${p.name}" class="object-cover w-full h-full rounded-md transition-opacity duration-300 opacity-100 hover:opacity-95" onerror="this.onerror=null; this.src='https://via.placeholder.com/100x100?text=–'; this.classList.remove('opacity-100'); this.classList.add('opacity-70');">`
+                : `<img src="https://via.placeholder.com/100x100?text=–" alt="Ürün görseli yok" class="object-cover w-full h-full opacity-70">`
+            }
+        </div>
+
+        <!-- Ürün Adı ve Stok -->
+        <div class="flex-1 flex flex-col justify-between min-h-0">
+            <h3 class="font-semibold text-sm text-gray-800 leading-tight line-clamp-2" title="${p.name}">
+                ${p.name}
+            </h3>
+            <p class="text-xs text-gray-500 mt-2 flex items-center">
+                <span class="inline-block w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></span>
+                Stok: <span class="font-medium ml-1">${p.stock}</span>
+            </p>
+        </div>
+
+        <!-- Fiyat -->
+        <p class="font-bold text-primary text-sm mt-3 text-right tracking-wide">
+            ${formatCurrency(p.price)}
+        </p>
+    </div>
+`;
+        card.dataset.product = JSON.stringify(p);
+        card.addEventListener('click', () => addToCart(JSON.parse(card.dataset.product)));
+        productListDiv.appendChild(card);
+    });
+};
     
     // Sepete ürün ekleme
     const addToCart = (product) => {

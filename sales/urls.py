@@ -3,6 +3,9 @@
 from django.urls import path
 from .views import POSView, finalize_sale_ajax, search_products_ajax
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 
 app_name = 'sales'
@@ -17,3 +20,6 @@ urlpatterns = [
     path('history/<int:pk>/', views.SaleHistoryDetailView.as_view(), name='sale_history_detail'),
   
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -54,26 +54,50 @@ def search_products_ajax(request):
     category_id = request.GET.get('category', '')
     is_barcode_scan = request.GET.get('barcode_scan') == 'true'
 
-    products = Product.active_objects.filter(quantity__gt=0)
+    products = Product.active_objects.all()  # Stok kontrolü kaldırıldı
 
     if term:
         if is_barcode_scan:
             products = products.filter(barcode_data=term)
         else:
             products = products.filter(
-                Q(name__icontains=term) | Q(product_code__icontains=term))
+                Q(name__icontains=term) | 
+                Q(product_code__icontains=term) |
+                Q(barcode_data__icontains=term)
+            )
 
     if category_id:
         products = products.filter(category_id=category_id)
 
     products = products.select_related('vat_rate')[:24]
 
-    product_list = [
-        {'id': p.id, 'name': p.name, 'code': p.product_code, 'stock': p.quantity,
-         'price': Decimal(str(p.selling_price)), 'vat_rate': Decimal(str(p.vat_rate.rate)) if p.vat_rate else Decimal('20.00')}
-        for p in products
-    ]
-    return JsonResponse({'products': product_list, 'is_barcode_match': len(product_list) == 1 and is_barcode_scan})
+    product_list = []
+    for p in products:
+        # Görsel URL'sini güvenli şekilde al
+        image_url = None
+        if p.image and hasattr(p.image, 'url'):
+            try:
+                image_url = p.image.url
+            except:
+                image_url = None
+        
+        product_data = {
+            'id': p.id, 
+            'name': p.name, 
+            'code': p.product_code, 
+            'barcode': p.barcode_data,  # Barkod bilgisi eklendi
+            'stock': p.quantity,
+            'price': Decimal(str(p.selling_price)), 
+            'vat_rate': Decimal(str(p.vat_rate.rate)) if p.vat_rate else Decimal('20.00'),
+            'image_url': image_url,
+            'description': getattr(p, 'description', ''),  # Açıklama eklendi
+        }
+        product_list.append(product_data)
+    
+    return JsonResponse({
+        'products': product_list, 
+        'is_barcode_match': len(product_list) == 1 and is_barcode_scan
+    })
 
 
 @login_required
