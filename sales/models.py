@@ -25,7 +25,12 @@ class Sale(models.Model):
         ('BANK_TRANSFER', 'Havale/EFT'),
         ('CREDIT', 'Veresiye'),  # SADECE BU EKLENİYOR
     ]
-    
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        blank=True, null=True,
+        verbose_name="Ödeme Yöntemi"
+    )
     sale_date = models.DateTimeField(default=timezone.now, verbose_name="Satış Tarihi")
     customer = models.ForeignKey('customers.Customer', on_delete=models.PROTECT, verbose_name="Müşteri")
     salesperson = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Satışı Yapan Personel")

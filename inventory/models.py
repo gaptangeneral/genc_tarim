@@ -1,3 +1,5 @@
+# inventory/models.py
+
 import uuid
 from io import BytesIO
 from django.db import models
@@ -10,8 +12,6 @@ from unidecode import unidecode
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.urls import reverse
-
-
 
 class ActiveProductManager(models.Manager):
     def get_queryset(self):
@@ -71,11 +71,9 @@ class Warehouse(models.Model):
         verbose_name_plural = "Depolar"
         ordering = ['name']
 
-
 class Shelf(models.Model):
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='shelves', verbose_name="Ait Olduğu Depo")
     code = models.CharField(max_length=50, verbose_name="Raf Kodu/Numarası")
-    # `unique_together` bir depoda aynı koda sahip birden fazla raf olmasını engeller.
     
     def __str__(self):
         return f"{self.warehouse.name} - {self.code}"
@@ -109,6 +107,7 @@ class Product(models.Model):
         null=True, blank=True,
         verbose_name="Uygulanacak Vergi Oranı"
     )
+    # ANA STOK ALANI - Sadece bu kullanılacak
     quantity = models.IntegerField(default=0, verbose_name="Mevcut Stok Miktarı")
     min_stock_level = models.PositiveIntegerField(default=5, verbose_name="Minimum Stok Seviyesi")
     
@@ -130,23 +129,27 @@ class Product(models.Model):
     def get_absolute_url(self):
         return reverse('inventory:product_detail', kwargs={'slug': self.slug})
 
+    # STOK DURUMU KONTROLÜ İÇİN PROPERTY
+    @property
+    def stock(self):
+        """Template'lerde kullanım kolaylığı için quantity'nin alias'ı"""
+        return self.quantity
+
+    def is_low_stock(self):
+        """Düşük stok kontrolü"""
+        return self.quantity <= self.min_stock_level
+
     def save(self, *args, **kwargs):
-        # --- YENİ VE DÜZELTİLMİŞ KISIM ---
         if not self.slug:
             original_slug = slugify(self.name)
             new_slug = original_slug
             counter = 1
-            # Aynı slug'a sahip başka bir ürün olup olmadığını kontrol et
             while Product.objects.filter(slug=new_slug).exists():
-                # Eğer varsa, sonuna bir sayı ekleyerek yeni bir slug oluştur
                 new_slug = f"{original_slug}-{counter}"
                 counter += 1
             self.slug = new_slug
-        # --- DÜZELTME SONU ---
 
         if not self.product_code and self.name:
-            # Ürün kodu oluşturma mantığını daha güvenli hale getirelim
-            # uuid ile rastgele bir son ek ekleyerek çakışmayı önleyelim
             base_code = slugify(self.name)[:5].upper()
             random_suffix = uuid.uuid4().hex[:4].upper()
             self.product_code = f"{base_code}-{random_suffix}"
@@ -169,11 +172,16 @@ class Product(models.Model):
 
         super().save(*args, **kwargs)
 
-    def is_low_stock(self):
-        return self.quantity <= self.min_stock_level
-
 class StockMovement(models.Model):
-    MOVEMENT_TYPES = [('PURCHASE', 'Alım'), ('SALE', 'Satış'), ('RETURN_CUSTOMER', 'Müşteri İadesi'), ('RETURN_SUPPLIER', 'Tedarikçiye İade'), ('ADJUSTMENT_IN', 'Stok Sayım Fazlası'), ('ADJUSTMENT_OUT', 'Stok Sayım Eksiği (Fire)'), ('INITIAL_STOCK', 'Başlangıç Stoku')]
+    MOVEMENT_TYPES = [
+        ('PURCHASE', 'Alım'), 
+        ('SALE', 'Satış'), 
+        ('RETURN_CUSTOMER', 'Müşteri İadesi'), 
+        ('RETURN_SUPPLIER', 'Tedarikçiye İade'), 
+        ('ADJUSTMENT_IN', 'Stok Sayım Fazlası'), 
+        ('ADJUSTMENT_OUT', 'Stok Sayım Eksiği (Fire)'), 
+        ('INITIAL_STOCK', 'Başlangıç Stoku')
+    ]
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_movements', verbose_name="Ürün")
     movement_type = models.CharField(max_length=20, choices=MOVEMENT_TYPES, verbose_name="Hareket Tipi")
     quantity = models.IntegerField(verbose_name="Miktar")

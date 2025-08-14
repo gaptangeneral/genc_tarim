@@ -70,7 +70,7 @@
                     {% for movement in stock_movements %}
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
                             <div class="flex items-center">
-                                {% if 'Alım' in movement.get_movement_type_display or 'Giriş' in movement.get_movement_type_display or 'Fazlası' in movement.get_movement_type_display or 'İade' in movement.get_movement_type_display %}
+                                {% if movement.movement_type in 'PURCHASE,RETURN_CUSTOMER,ADJUSTMENT_IN,INITIAL_STOCK' %}
                                     <div class="bg-green-100 p-2 rounded-lg mr-4"><i class="fas fa-arrow-down text-green-600"></i></div>
                                 {% else %}
                                     <div class="bg-red-100 p-2 rounded-lg mr-4"><i class="fas fa-arrow-up text-red-600"></i></div>
@@ -78,10 +78,13 @@
                                 <div>
                                     <p class="font-medium text-gray-900">{{ movement.get_movement_type_display }}</p>
                                     <p class="text-xs text-gray-500">{{ movement.timestamp|date:"d M Y, H:i" }}</p>
+                                    {% if movement.notes %}
+                                        <p class="text-xs text-gray-400 mt-1">{{ movement.notes|truncatechars:50 }}</p>
+                                    {% endif %}
                                 </div>
                             </div>
-                            <span class="text-base font-bold {% if 'Alım' in movement.get_movement_type_display or 'Giriş' in movement.get_movement_type_display or 'Fazlası' in movement.get_movement_type_display or 'İade' in movement.get_movement_type_display %}text-green-600{% else %}text-red-600{% endif %}">
-                                {% if 'Alım' in movement.get_movement_type_display or 'Giriş' in movement.get_movement_type_display or 'Fazlası' in movement.get_movement_type_display or 'İade' in movement.get_movement_type_display %}+{% else %}-{% endif %}{{ movement.quantity }}
+                            <span class="text-base font-bold {% if movement.movement_type in 'PURCHASE,RETURN_CUSTOMER,ADJUSTMENT_IN,INITIAL_STOCK' %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if movement.movement_type in 'PURCHASE,RETURN_CUSTOMER,ADJUSTMENT_IN,INITIAL_STOCK' %}+{% else %}-{% endif %}{{ movement.quantity }}
                             </span>
                         </div>
                     {% empty %}
@@ -96,17 +99,19 @@
 
         <!-- SAĞ TARAF -->
         <div class="space-y-6">
-            <!-- Stok Durumu Kartı -->
+            <!-- Stok Durumu Kartı - BU KISIM DÜZELTİLDİ -->
             <div class="bg-white p-6 rounded-xl shadow-sm border text-center hover:shadow-md transition-shadow duration-200">
                 <div class="bg-blue-100 p-3 rounded-full mx-auto mb-3 w-fit">
                     <i class="fas fa-boxes text-blue-500 text-xl"></i>
                 </div>
                 <p class="text-gray-500 text-sm font-medium">Mevcut Stok</p>
-                <h4 class="text-4xl font-bold text-gray-900 mt-1">{{ product.stock }}</h4>
-                {% if product.is_low_stock and product.stock > 0 %}
-                    <span class="mt-2 inline-block px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">Düşük Stok</span>
-                {% elif product.stock == 0 %}
+                <!-- DÜZELTİLDİ: product.stock yerine product.quantity kullanıldı -->
+                <h4 class="text-4xl font-bold text-gray-900 mt-1">{{ product.quantity }}</h4>
+                <!-- DÜZELTİLDİ: Stok kontrolü de product.quantity ile yapılıyor -->
+                {% if product.quantity == 0 %}
                     <span class="mt-2 inline-block px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Tükendi</span>
+                {% elif product.quantity <= product.min_stock_level %}
+                    <span class="mt-2 inline-block px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">Düşük Stok</span>
                 {% else %}
                     <span class="mt-2 inline-block px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Yeterli</span>
                 {% endif %}

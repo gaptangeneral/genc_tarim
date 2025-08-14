@@ -1,4 +1,3 @@
-# inventory/management/commands/reset_and_sync_stocks.py
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -13,7 +12,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING('TÜM STOKLAR SIFIRLANIYOR...'))
         
         # Adım 1: Tüm ürünlerin stoğunu güvenli bir şekilde 0'a çek.
-        Product.objects.all().update(stock=0)
+        Product.objects.all().update(quantity=0)  # 'quantity' alanını kullan
         
         self.stdout.write(self.style.SUCCESS('Tüm ürün stokları başarıyla 0 olarak ayarlandı.'))
         self.stdout.write(self.style.WARNING('Geçmiş hareketlerden yeniden senkronizasyon başlıyor...'))
@@ -24,8 +23,8 @@ class Command(BaseCommand):
             result = StockMovement.objects.filter(product=product).aggregate(
                 total_stock=Sum(
                     Case(
-                        When(movement_type__in=['PURCHASE', 'STOCK_IN', 'RETURN'], then=F('quantity')),
-                        When(movement_type__in=['SALE', 'SERVICE_USE', 'FIRE_WASTE'], then=Value(-1) * F('quantity')),
+                        When(movement_type__in=['PURCHASE', 'RETURN_CUSTOMER', 'ADJUSTMENT_IN', 'INITIAL_STOCK'], then=F('quantity')),
+                        When(movement_type__in=['SALE', 'RETURN_SUPPLIER', 'ADJUSTMENT_OUT'], then=Value(-1) * F('quantity')),
                         default=Value(0),
                         output_field=IntegerField()
                     )
@@ -35,8 +34,8 @@ class Command(BaseCommand):
             calculated_stock = result['total_stock'] or 0
             
             # Sadece hesaplanan stoğu product nesnesine ata.
-            product.stock = calculated_stock
-            product.save(update_fields=['stock'])
+            product.quantity = calculated_stock  # 'quantity' alanını kullan
+            product.save(update_fields=['quantity'])
 
             if calculated_stock < 0:
                  self.stdout.write(self.style.ERROR(
