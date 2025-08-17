@@ -1,0 +1,215 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Genç Tarım Asistan</title>
+
+  <!-- Tailwind (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+  <style>
+    .chat-container{height:calc(100vh - 120px)}
+    .message{animation:fadeIn .3s ease-in}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .typing-indicator span{animation:blink 1.4s infinite}
+    .typing-indicator span:nth-child(2){animation-delay:.2s}
+    .typing-indicator span:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,60%,100%{opacity:.2}30%{opacity:1}}
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+          <div class="flex items-center">
+            <div class="bg-white bg-opacity-20 p-3 rounded-full mr-4">
+              <i class="fas fa-robot text-2xl"></i>
+            </div>
+            <div>
+              <h1 class="text-2xl font-bold">Genç Tarım Asistan</h1>
+              <p class="text-blue-100">Sorularınızı yanıtlayayım</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="chat-container flex flex-col">
+          <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-4">
+            <div class="flex justify-start">
+              <div class="bg-gray-100 rounded-lg p-4 max-w-md">
+                <p class="text-gray-800">
+                  Merhaba! Ben Genc Tarım AI.  Size nasıl yardımcı olabilirim?
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input -->
+          <div class="border-t p-4">
+            <form id="chatForm" class="flex space-x-2" action="/chatbot/" method="post">
+              {% csrf_token %}
+              <input
+                type="text"
+                id="messageInput"
+                name="message"
+                placeholder="Mesajınızı yazın..."
+                class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autocomplete="off"
+                aria-label="Mesajınız"
+              />
+              <button
+                type="submit"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition duration-200 flex items-center"
+                aria-label="Gönder"
+              >
+                <i class="fas fa-paper-plane mr-2"></i> Gönder
+              </button>
+            </form>
+
+            <!-- Quick examples -->
+            <div class="mt-3 text-sm text-gray-500">
+              <p><strong>Örnek sorular:</strong></p>
+              <div class="flex flex-wrap gap-2 mt-1">
+                <button class="example-question bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-xs">Stokta azalan ürünler neler?</button>
+                <button class="example-question bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-xs">Bu ayki toplam ciro ne kadar?</button>
+                <button class="example-question bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-xs">Son 5 müşteriyi göster</button>
+                <button class="example-question bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-xs">Tamirdeki servisler hangileri?</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /Chat -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const chatForm = document.getElementById('chatForm');
+      const messageInput = document.getElementById('messageInput');
+      const chatMessages = document.getElementById('chatMessages');
+      const exampleQuestions = document.querySelectorAll('.example-question');
+
+      // Örnek sorular tıklama
+      exampleQuestions.forEach(btn => {
+        btn.addEventListener('click', function () {
+          messageInput.value = this.textContent.trim();
+          messageInput.focus();
+        });
+      });
+
+      // Enter ile gönder (mobilde de çalışır)
+      messageInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          chatForm.requestSubmit();
+        }
+      });
+
+      // Form gönderimi
+      chatForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        addMessage(message, 'user');
+        messageInput.value = '';
+        showTypingIndicator();
+
+        // IMPORTANT: View'ınız ChatbotView.post ile /chatbot/ altında POST bekliyor.
+        // URL'yi projenizdeki urlpatterns ile eşleştirin.
+        fetch('/chatbot/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: `message=${encodeURIComponent(message)}`
+        })
+          .then(res => {
+            // 403 vb. durumları yakalamak için:
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status}`);
+            }
+            return res.json();
+          })
+          .then(data => {
+            removeTypingIndicator();
+            if (data && data.response) {
+              addMessage(data.response, 'bot');
+            } else if (data && data.error) {
+              addMessage(`Hata: ${data.error}`, 'bot');
+            } else {
+              addMessage('Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.', 'bot');
+            }
+          })
+          .catch(err => {
+            removeTypingIndicator();
+            console.error('Fetch error:', err);
+            addMessage('Bağlantı hatası. Lütfen internet bağlantınızı ve sunucu durumunu kontrol edin.', 'bot');
+          });
+      });
+
+      // Mesaj ekleme
+      function addMessage(text, sender) {
+        const wrapper = document.createElement('div');
+        wrapper.className = `message flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+
+        const bubble = document.createElement('div');
+        bubble.className = `rounded-lg p-4 max-w-md ${sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'}`;
+        bubble.textContent = text;
+
+        wrapper.appendChild(bubble);
+        chatMessages.appendChild(wrapper);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      // Yazıyor göstergesi
+      function showTypingIndicator() {
+        const indicator = document.createElement('div');
+        indicator.id = 'typingIndicator';
+        indicator.className = 'flex justify-start';
+        indicator.innerHTML = `
+          <div class="bg-gray-100 rounded-lg p-4">
+            <div class="typing-indicator flex space-x-1">
+              <span class="h-2 w-2 bg-gray-400 rounded-full"></span>
+              <span class="h-2 w-2 bg-gray-400 rounded-full"></span>
+              <span class="h-2 w-2 bg-gray-400 rounded-full"></span>
+            </div>
+          </div>
+        `;
+        chatMessages.appendChild(indicator);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function removeTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+      }
+
+      // CSRF cookie
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+    });
+  </script>
+</body>
+</html>

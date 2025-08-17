@@ -17,6 +17,28 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
+            
+            <!-- ÜRÜN FOTOĞRAFI BÖLÜMÜ EKLENDİ -->
+            {% if record.product_images %}
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Ürün Teslim Alım Fotoğrafı</h3>
+                <div class="flex justify-center">
+                    <div class="relative">
+                        <img src="{{ record.product_images.url }}" alt="Ürün Fotoğrafı" class="max-w-full h-64 object-cover rounded-lg border border-gray-300 shadow-sm">
+                        <div class="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md">
+                            <i class="fas fa-camera text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <a href="{{ record.product_images.url }}" target="_blank" class="inline-flex items-center px-3 py-2 text-sm font-medium text-primary hover:text-dark">
+                        <i class="fas fa-expand-arrows-alt mr-2"></i>
+                        Tam Boyutta Görüntüle
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
             <div class="bg-white p-6 rounded-xl shadow">
                 <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Servis Detayları</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6 text-sm">
@@ -57,6 +79,46 @@
                     </div>
                 </form>
             </div>
+            <form method="post" enctype="multipart/form-data" class="mt-6 pt-6 border-t">
+    {% csrf_token %}
+    <h4 class="text-md font-medium text-gray-700 mb-4">Ürün Fotoğrafını Güncelle</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+        <div>
+            <label for="product_images" class="block text-gray-500 font-medium mb-1">Yeni Fotoğraf Seç</label>
+            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
+                <div class="space-y-1 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="flex text-sm text-gray-600">
+                        <label for="product_images" class="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary">
+                            <span>Fotoğraf seçin</span>
+                            <input id="product_images" name="product_images" type="file" class="sr-only" accept="image/*">
+                        </label>
+                        <p class="pl-1">veya sürükleyip bırakın</p>
+                    </div>
+                    <p class="text-xs text-gray-500">PNG, JPG, GIF (maks. 10MB)</p>
+                </div>
+            </div>
+        </div>
+        <div>
+            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                <i class="fas fa-camera mr-2"></i>Fotoğrafı Güncelle
+            </button>
+        </div>
+    </div>
+    
+    <!-- Seçilen dosya önizlemesi için alan -->
+    <div id="photo-preview" class="mt-4 hidden">
+        <p class="text-sm font-medium text-gray-700 mb-2">Yüklenecek Fotoğraf:</p>
+        <div class="relative inline-block">
+            <img id="preview-image" src="" alt="Seçilen fotoğraf" class="h-32 w-32 object-cover rounded-lg border border-gray-300">
+            <button type="button" id="remove-preview" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+</form>
 
             <div class="bg-white p-6 rounded-xl shadow">
                 <h3 class="text-lg font-semibold text-gray-800 border-b pb-3 mb-4">Kullanılan Parçalar</h3>
@@ -277,6 +339,87 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteModal.classList.add('hidden');
         partToDelete = null;
     };
+    document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('product_images');
+    const previewContainer = document.getElementById('photo-preview');
+    const previewImage = document.getElementById('preview-image');
+    const removePreviewBtn = document.getElementById('remove-preview');
+
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Dosya boyutu kontrolü (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Dosya boyutu 10MB\'dan büyük olamaz.');
+                fileInput.value = '';
+                return;
+            }
+
+            // Dosya tipi kontrolü
+            if (!file.type.startsWith('image/')) {
+                alert('Lütfen geçerli bir resim dosyası seçin.');
+                fileInput.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewContainer.classList.add('hidden');
+        }
+    });
+
+    removePreviewBtn.addEventListener('click', function() {
+        fileInput.value = '';
+        previewContainer.classList.add('hidden');
+    });
+
+    // Drag & drop functionality
+    const dropZone = fileInput.closest('.border-dashed');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+        dropZone.classList.add('border-primary', 'bg-primary', 'bg-opacity-5');
+    }
+
+    function unhighlight() {
+        dropZone.classList.remove('border-primary', 'bg-primary', 'bg-opacity-5');
+    }
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            fileInput.files = files;
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+        }
+    }
+});
+
 
     // Global function for delete button
     window.deletePart = (partId, partName) => {

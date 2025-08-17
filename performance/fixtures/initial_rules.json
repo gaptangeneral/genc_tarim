@@ -1,0 +1,218 @@
+[
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Servis Kabul",
+      "category": "SERVICE",
+      "action": "SERVICE_ACCEPTED",
+      "points": "5.00",
+      "description": "Yeni servis kaydı kabul edildiğinde",
+      "is_active": true,
+      "auto_apply": true
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Arıza Tespiti",
+      "category": "SERVICE",
+      "action": "SERVICE_DIAGNOSED",
+      "points": "10.00",
+      "description": "Arıza tespiti tamamlandığında",
+      "is_active": true,
+      "auto_apply": true
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Onarım Tamamlama",
+      "category": "SERVICE",
+      "action": "SERVICE_REPAIRED",
+      "points": "15.00",
+      "description": "Onarım tamamlandığında",
+      "is_active": true,
+      "auto_apply": true
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Müşteriye Teslim",
+      "category": "SERVICE",
+      "action": "SERVICE_DELIVERED",
+      "points": "20.00",
+      "description": "Servis müşteriye teslim edildiğinde",
+      "is_active": true,
+      "auto_apply": true
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Hızlı Tamamlama Bonusu",
+      "category": "SERVICE",
+      "action": "SERVICE_FAST_COMPLETION",
+      "points": "25.00",
+      "description": "24 saat içinde tamamlanan servisler için bonus",
+      "is_active": true,
+      "auto_apply": true
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Geciken Servis Cezası",
+      "category": "SERVICE",
+      "action": "SERVICE_DELAYED",
+      "points": "-10.00",
+      "description": "48 saatten fazla bekleyen servisler için",
+      "is_active": true,
+      "auto_apply": false
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Zamanında Gelme",
+      "category": "ATTENDANCE",
+      "action": "ON_TIME",
+      "points": "5.00",
+      "description": "Mesaiye zamanında gelme",
+      "is_active": true,
+      "auto_apply": true
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Geç Kalma Cezası",
+      "category": "ATTENDANCE",
+      "action": "LATE_ARRIVAL",
+      "points": "-5.00",
+      "description": "Mesaiye geç kalma (her 15 dk için katlanır)",
+      "is_active": true,
+      "auto_apply": true
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Erken Çıkma Cezası",
+      "category": "ATTENDANCE",
+      "action": "EARLY_LEAVE",
+      "points": "-5.00",
+      "description": "Mesaiden erken çıkma",
+      "is_active": true,
+      "auto_apply": true
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Devamsızlık Cezası",
+      "category": "ATTENDANCE",
+      "action": "ABSENT",
+      "points": "-25.00",
+      "description": "İzinsiz devamsızlık",
+      "is_active": true,
+      "auto_apply": true
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Fazla Mesai Bonusu",
+      "category": "ATTENDANCE",
+      "action": "OVERTIME",
+      "points": "3.00",
+      "description": "Fazla mesai saati başına",
+      "is_active": true,
+      "auto_apply": false
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Kaliteli İş",
+      "category": "QUALITY",
+      "action": "NO_REWORK",
+      "points": "10.00",
+      "description": "İade veya tekrar işlem gerektirmeyen servis",
+      "is_active": true,
+      "auto_apply": false
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Tekrar İşlem Cezası",
+      "category": "QUALITY",
+      "action": "REWORK_REQUIRED",
+      "points": "-20.00",
+      "description": "İade veya tekrar işlem gereken servis",
+      "is_active": true,
+      "auto_apply": false
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Müşteri Şikayeti",
+      "category": "CUSTOMER",
+      "action": "CUSTOMER_COMPLAINT",
+      "points": "-15.00",
+      "description": "Müşteri şikayeti alınan servis",
+      "is_active": true,
+      "auto_apply": false
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Müşteri Memnuniyeti",
+      "category": "CUSTOMER",
+      "action": "CUSTOMER_SATISFACTION",
+      "points": "15.00",
+      "description": "Müşteri memnuniyeti bildirimi",
+      "is_active": true,
+      "auto_apply": false
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Aylık Hedef Başarısı",
+      "category": "SERVICE",
+      "action": "MONTHLY_TARGET_ACHIEVED",
+      "points": "100.00",
+      "description": "Aylık servis hedefini tutturma",
+      "is_active": true,
+      "auto_apply": false
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Takım Desteği",
+      "category": "TEAM",
+      "action": "TEAM_SUPPORT",
+      "points": "10.00",
+      "description": "Takım arkadaşına yardım",
+      "is_active": true,
+      "auto_apply": false
+    }
+  },
+  {
+    "model": "performance.pointrule",
+    "fields": {
+      "name": "Eğitim Tamamlama",
+      "category": "TEAM",
+      "action": "TRAINING_COMPLETED",
+      "points": "25.00",
+      "description": "Eğitim programını tamamlama",
+      "is_active": true,
+      "auto_apply": false
+    }
+  }
+]

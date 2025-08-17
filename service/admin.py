@@ -1,4 +1,4 @@
-# service/admin.py
+# service/admin.py - ServiceRecordAdmin güncellemesi
 
 from django.contrib import admin
 from .models import ServiceRecord, ServicePart
@@ -26,8 +26,14 @@ class ServiceRecordAdmin(admin.ModelAdmin):
         ("Problem ve Çözüm Detayları", {
             "fields": ("customer_complaint", "technician_notes")
         }),
+        ("Fotoğraf ve Barkod", {  # Yeni bölüm eklendi
+            "fields": ("product_images", "barcode_image")
+        }),
+        ("Mali Bilgiler", {
+            "fields": ("labor_cost", "kdv_rate")
+        }),
         ("Önemli Tarihler", {
             "fields": ("completed_at",)
         }),
     )
-    readonly_fields = ('service_id', 'created_at', 'updated_at')
+    readonly_fields = ('service_id', 'created_at', 'updated_at', 'barcode_image')

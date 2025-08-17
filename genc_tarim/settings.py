@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'crispy_tailwind',
     'django_select2',
     'django.contrib.humanize',
+    'corsheaders',
     
     # Kendi Uygulamalarımız (Tam yollarıyla birlikte)
     'inventory.apps.InventoryConfig',
@@ -57,7 +58,10 @@ INSTALLED_APPS = [
     'logs.apps.LogsConfig',
     'backups.apps.BackupsConfig',
     'sales.apps.SalesConfig',
-    'current_accounts.apps.CurrentAccountsConfig'
+    'current_accounts.apps.CurrentAccountsConfig',
+    'performance.apps.PerformanceConfig',
+    'chatbot',
+
 ]
 
 MIDDLEWARE = [
@@ -69,8 +73,21 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  
 ]
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
+CORS_ALLOW_ALL_ORIGINS = True  # Geliştirme için tüm originlere izin verir
+# veya sadece belirli originlere izin vermek için:
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:8000",
+#     "http://127.0.0.1:8000",
+# ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
 ROOT_URLCONF = 'genc_tarim.urls'
 
 TEMPLATES = [
@@ -161,5 +178,32 @@ STORAGES = {
     # WhiteNoise'un statik dosyaları verimli bir şekilde sunması için.
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+
+CHATBOT_API_KEY = "3513ae17f14948d3be8bdb11374a369e.pP94vH418MhDoIZt"  # Gerçek API anahtarınızı buraya ekleyin
+CHATBOT_MODEL = "GLM-4.5-Flash"  # Kullanılacak model
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'chatbot.log',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'chatbot.services': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
     },
 }

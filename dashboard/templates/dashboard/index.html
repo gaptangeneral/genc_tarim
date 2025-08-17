@@ -229,11 +229,55 @@
         </div>
     </div>
 </div>
+<!-- Chatbot Toggle Button -->
+<div class="fixed bottom-6 right-6 z-50">
+  <button id="chatbotToggle"
+    class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-transform duration-300 hover:scale-110 focus:outline-none">
+    <i class="fas fa-comments text-xl"></i>
+  </button>
+</div>
+
+<!-- Chatbot Window -->
+<div id="chatbotWindow"
+  class="fixed bottom-6 right-6 w-[600px] md:w-[800px] lg:w-[1000px] h-[700px] md:h-[800px] bg-white rounded-2xl shadow-2xl border border-gray-200 hidden z-40 flex flex-col overflow-hidden">
+
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-3 flex justify-between items-center">
+    <div class="flex items-center space-x-2">
+      <i class="fas fa-robot"></i>
+      <span class="font-semibold tracking-wide">GLM Asistan</span>
+    </div>
+    <button id="closeChatbot"
+      class="text-white hover:text-gray-200 transition-colors duration-200">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="flex-1 bg-gray-50">
+    <iframe id="chatbotFrame" src="/chatbot/" class="w-full h-full border-0 rounded-b-2xl"></iframe>
+  </div>
+</div>
+
 {% endblock content %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Chatbot açma/kapama
+        const chatbotToggle = document.getElementById('chatbotToggle');
+        const chatbotWindow = document.getElementById('chatbotWindow');
+        const closeChatbot = document.getElementById('closeChatbot');
+
+        chatbotToggle.addEventListener('click', function() {
+            chatbotWindow.classList.toggle('hidden');
+        });
+
+        closeChatbot.addEventListener('click', function() {
+            chatbotWindow.classList.add('hidden');
+        });
+    });
     document.addEventListener('DOMContentLoaded', function() {
         
         // Grafik varsayılan ayarları

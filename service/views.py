@@ -379,8 +379,18 @@ class ServiceRecordDetailView(LoginRequiredMixin, DetailView):
     def post(self, request, *args, **kwargs):
         record = self.get_object()
 
+        # Fotoğraf güncelleme isteği kontrolü
+        if 'product_images' in request.FILES:
+            try:
+                record.product_images = request.FILES['product_images']
+                record.save()
+                messages.success(request, "Ürün fotoğrafı başarıyla güncellendi.")
+            except Exception as e:
+                messages.error(request, f"Fotoğraf yüklenirken bir hata oluştu: {str(e)}")
+            return redirect('service:servicerecord_detail', pk=record.pk)
+
         # İşçilik ve KDV güncelleme isteği kontrolü
-        if 'labor_cost' in request.POST and 'kdv_rate' in request.POST:
+        elif 'labor_cost' in request.POST and 'kdv_rate' in request.POST:
             try:
                 labor_cost_str = request.POST.get('labor_cost', '0').replace(',', '.')
                 kdv_rate_str = request.POST.get('kdv_rate', '0').replace(',', '.')
@@ -409,7 +419,6 @@ class ServiceRecordDetailView(LoginRequiredMixin, DetailView):
         else:
             messages.error(request, "Geçersiz işlem.")
             return redirect('service:servicerecord_detail', pk=record.pk)
-
 
 
 class ServiceRecordUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):

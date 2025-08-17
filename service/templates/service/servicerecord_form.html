@@ -19,7 +19,8 @@
     {% endif %}
 <div class="bg-white p-8 rounded-xl shadow max-w-4xl mx-auto">
     <h1 class="text-xl font-semibold text-gray-900 mb-6">{{ page_title }}</h1>
-    <form method="post">
+    <!-- FORM ENCType EKLENECEK -->
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="space-y-6">
             <div class="p-4 border border-gray-200 rounded-lg">
@@ -40,6 +41,51 @@
                     <div><label for="{{ form.serial_number.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">Seri Numarası</label>{{ form.serial_number }}{% if form.serial_number.errors %}<div class="text-red-500 text-sm mt-1">{{ form.serial_number.errors }}</div>{% endif %}</div>
                 </div>
             </div>
+            
+            <!-- ÜRÜN FOTOĞRAFI BÖLÜMÜ EKLENDİ -->
+            <div class="p-4 border border-gray-200 rounded-lg">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Ürün Fotoğrafı</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="{{ form.product_images.id_for_label }}" class="block text-gray-700 text-sm font-medium mb-1">{{ form.product_images.label }}</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="{{ form.product_images.id_for_label }}" class="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary">
+                                        <span>Fotoğraf yükleyin</span>
+                                        {{ form.product_images }}
+                                    </label>
+                                    <p class="pl-1">veya sürükleyip bırakın</p>
+                                </div>
+                                <p class="text-xs text-gray-500">PNG, JPG, GIF dosyaları (maksimum 10MB)</p>
+                            </div>
+                        </div>
+                        {% if form.product_images.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.product_images.help_text }}</p>
+                        {% endif %}
+                        {% if form.product_images.errors %}
+                            <div class="text-red-500 text-sm mt-1">{{ form.product_images.errors }}</div>
+                        {% endif %}
+                        
+                        <!-- Mevcut fotoğrafı göster (güncelleme modunda) -->
+                        {% if form.instance.product_images %}
+                            <div class="mt-4">
+                                <p class="text-sm font-medium text-gray-700 mb-2">Mevcut Fotoğraf:</p>
+                                <div class="relative inline-block">
+                                    <img src="{{ form.instance.product_images.url }}" alt="Mevcut ürün fotoğrafı" class="h-32 w-32 object-cover rounded-lg border border-gray-300">
+                                    <div class="absolute top-0 right-0 bg-red-100 rounded-full p-1 transform translate-x-2 -translate-y-2">
+                                        <i class="fas fa-image text-red-600 text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
             <div class="p-4 border border-gray-200 rounded-lg">
                 <h3 class="text-lg font-medium text-gray-800 mb-4">Servis Detayları</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -57,7 +103,8 @@
     </form>
 </div>
 
-<<div id="quick-add-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden flex items-center justify-center">
+<!-- Modal kısmı aynı kalıyor... -->
+<div id="quick-add-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden flex items-center justify-center">
     <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg m-4">
         <h3 id="modal-title" class="text-lg font-semibold text-gray-900 mb-4">Yeni Müşteri Ekle</h3>
         <form id="quick-add-form">
@@ -104,10 +151,45 @@
 {% endblock %}
 
 {% block extra_js %}
-{{ form.media.js }} {# Select2 için gerekli JS #}
+{{ form.media.js }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Hızlı Müşteri Ekleme Modal'ı için olan kod
+    // File input önizleme özelliği
+    const fileInput = document.getElementById('{{ form.product_images.id_for_label }}');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Mevcut önizleme varsa kaldır
+                    const existingPreview = document.querySelector('.file-preview');
+                    if (existingPreview) {
+                        existingPreview.remove();
+                    }
+                    
+                    // Yeni önizleme oluştur
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'file-preview mt-4';
+                    previewDiv.innerHTML = `
+                        <p class="text-sm font-medium text-gray-700 mb-2">Önizleme:</p>
+                        <div class="relative inline-block">
+                            <img src="${e.target.result}" alt="Seçilen fotoğraf" class="h-32 w-32 object-cover rounded-lg border border-gray-300">
+                            <div class="absolute top-0 right-0 bg-green-100 rounded-full p-1 transform translate-x-2 -translate-y-2">
+                                <i class="fas fa-check text-green-600 text-xs"></i>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Dosya input'unun parent container'ına ekle
+                    fileInput.closest('.p-4').appendChild(previewDiv);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Mevcut modal kodu...
     const modal = document.getElementById('quick-add-modal');
     const openBtn = document.getElementById('quick-add-customer-btn');
     const cancelBtn = document.getElementById('modal-cancel-btn');

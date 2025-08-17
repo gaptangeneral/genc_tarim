@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="space-y-6">
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Performansım</h1>
+        
+        {% if not is_technician %}
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                            Bu sayfayı görüntülemek için teknisyen grubuna üye olmanız gerekmektedir.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Özet Kartları -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-5 rounded-xl text-white">
+                    <div class="text-sm opacity-80">Bu Ayki Puanım</div>
+                    <div class="text-3xl font-bold mt-1">
+                        {% if month_points >= 0 %}+{% endif %}{{ month_points|floatformat:0 }}
+                    </div>
+                    <div class="mt-2 text-sm opacity-80">
+                        Sıralamam: {{ my_rank }} / {{ total_technicians }}
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-green-500 to-green-600 p-5 rounded-xl text-white">
+                    <div class="text-sm opacity-80">Servislerim</div>
+                    <div class="text-3xl font-bold mt-1">{{ completed_services }} / {{ month_services }}</div>
+                    <div class="mt-2 text-sm opacity-80">
+                        {% if month_services > 0 %}
+                            Tamamlama: {% widthratio completed_services month_services 100 }%
+                        {% else %}
+                            Henüz servis yok
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-5 rounded-xl text-white">
+                    <div class="text-sm opacity-80">Aylık Hedefim</div>
+                    <div class="text-3xl font-bold mt-1">{{ profile.monthly_target }}</div>
+                    <div class="mt-2 text-sm opacity-80">
+                        {% if profile.monthly_target > 0 %}
+                            {% widthratio completed_services profile.monthly_target 100 %} tamamlandı
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bugünkü Durum -->
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Bugünkü Durumum</h2>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    {% if today_attendance %}
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <div class="text-sm text-gray-500">Giriş Saati</div>
+                                <div class="text-xl font-semibold">
+                                    {% if today_attendance.check_in_time %}
+                                        {{ today_attendance.check_in_time }}
+                                    {% else %}
+                                        <span class="text-gray-400">Yapılmadı</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <div class="text-sm text-gray-500">Çıkış Saati</div>
+                                <div class="text-xl font-semibold">
+                                    {% if today_attendance.check_out_time %}
+                                        {{ today_attendance.check_out_time }}
+                                    {% else %}
+                                        <span class="text-gray-400">Yapılmadı</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded-lg shadow-sm">
+                                <div class="text-sm text-gray-500">Durum</div>
+                                <div class="text-xl font-semibold">
+                                    {% if today_attendance.status == 'ON_TIME' %}
+                                        <span class="text-green-600">Zamanında</span>
+                                    {% elif today_attendance.status == 'LATE' %}
+                                        <span class="text-yellow-600">Geç Kaldı</span>
+                                    {% elif today_attendance.status == 'EARLY' %}
+                                        <span class="text-yellow-600">Erken Çıktı</span>
+                                    {% elif today_attendance.status == 'ABSENT' %}
+                                        <span class="text-red-600">Gelmedi</span>
+                                    {% else %}
+                                        <span class="text-blue-600">İzinli</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if not today_attendance.check_in_time or not today_attendance.check_out_time %}
+                            <div class="mt-4 text-center">
+                                <a href="{% url 'performance:check_in' %}" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200">
+                                    {% if not today_attendance.check_in_time %}
+                                        Giriş Yap
+                                    {% else %}
+                                        Çıkış Yap
+                                    {% endif %}
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-6">
+                            <p class="text-gray-600 mb-4">Bugün için mesai kaydınız bulunmuyor.</p>
+                            <a href="{% url 'performance:check_in' %}" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200">
+                                Giriş Yap
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Son Puan İşlemleri -->
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Son Puan İşlemlerim</h2>
+                <div class="bg-gray-50 rounded-lg overflow-hidden">
+                    {% if recent_transactions %}
+                        <div class="divide-y divide-gray-200">
+                            {% for transaction in recent_transactions %}
+                                <div class="p-4 hover:bg-gray-100">
+                                    <div class="flex justify-between">
+                                        <div>
+                                            <div class="font-medium text-gray-900">{{ transaction.description }}</div>
+                                            <div class="text-sm text-gray-500">{{ transaction.created_at|date:"d.m.Y H:i" }}</div>
+                                        </div>
+                                        <div class="text-lg font-bold {% if transaction.points >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                            {% if transaction.points >= 0 %}+{% endif %}{{ transaction.points }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="bg-gray-100 px-4 py-3 text-center">
+                            <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                Tüm puan işlemlerimi görüntüle
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8 text-gray-500">
+                            Henüz puan işleminiz bulunmuyor.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

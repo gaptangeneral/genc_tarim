@@ -38,6 +38,8 @@ class ServiceRecord(models.Model):
 
     barcode_image = models.ImageField(upload_to='service_barcodes/', blank=True, null=True, verbose_name="Servis Barkod Resmi")
     labor_cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, default=0, verbose_name="İşçilik Ücreti")
+    product_images = models.ImageField(upload_to='service_photos/', blank=True, null=True, verbose_name="Ürün Teslim Alım Fotoğrafı")
+
     kdv_rate = models.DecimalField(
         max_digits=5, decimal_places=2, default=20.00, blank=True, 
         verbose_name="KDV Oranı (%)"
